@@ -17,4 +17,7 @@ export const collections = {
   challenges: 'challenges',
   featureFlags: 'featureFlags',
   aiLogs: 'aiLogs',
+  seasons: 'seasons',
+  teamMissions: 'teamMissions',
+  marketplace: 'marketplace',
 } as const;

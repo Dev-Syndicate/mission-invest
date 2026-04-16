@@ -98,6 +98,31 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // ── Seasons ──
+
+    match /seasons/{seasonId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // ── Team Missions ──
+
+    match /teamMissions/{teamId} {
+      allow read: if isAuthenticated() &&
+        resource.data.memberIds.hasAny([request.auth.uid]);
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() &&
+        resource.data.memberIds.hasAny([request.auth.uid]);
+      allow delete: if false;
+    }
+
+    // ── Marketplace ──
+
+    match /marketplace/{itemId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
     // ── AI Logs (admin only) ──
 
     match /aiLogs/{logId} {
