@@ -34,6 +34,14 @@ _$MissionModelImpl _$$MissionModelImplFromJson(Map<String, dynamic> json) =>
       status: json['status'] as String? ?? 'active',
       visionImageUrl: json['visionImageUrl'] as String?,
       motivationMessage: json['motivationMessage'] as String?,
+      storyHeadline: json['storyHeadline'] as String?,
+      personalNote: json['personalNote'] as String?,
+      missionEmoji: json['missionEmoji'] as String?,
+      contractType: json['contractType'] as String? ?? 'none',
+      contractStatus: json['contractStatus'] as String? ?? 'none',
+      contractRecoveryDeadline: json['contractRecoveryDeadline'] == null
+          ? null
+          : DateTime.parse(json['contractRecoveryDeadline'] as String),
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
       completedAt: json['completedAt'] == null
@@ -64,6 +72,13 @@ Map<String, dynamic> _$$MissionModelImplToJson(_$MissionModelImpl instance) =>
       'status': instance.status,
       'visionImageUrl': instance.visionImageUrl,
       'motivationMessage': instance.motivationMessage,
+      'storyHeadline': instance.storyHeadline,
+      'personalNote': instance.personalNote,
+      'missionEmoji': instance.missionEmoji,
+      'contractType': instance.contractType,
+      'contractStatus': instance.contractStatus,
+      'contractRecoveryDeadline': instance.contractRecoveryDeadline
+          ?.toIso8601String(),
       'createdAt': instance.createdAt.toIso8601String(),
       'updatedAt': instance.updatedAt.toIso8601String(),
       'completedAt': instance.completedAt?.toIso8601String(),

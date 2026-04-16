@@ -1,18 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 import '../../../../core/utils/validators.dart';
+import '../providers/auth_provider.dart';
 
-class ForgotPasswordPage extends StatefulWidget {
+class ForgotPasswordPage extends ConsumerStatefulWidget {
   const ForgotPasswordPage({super.key});
 
   @override
-  State<ForgotPasswordPage> createState() => _ForgotPasswordPageState();
+  ConsumerState<ForgotPasswordPage> createState() =>
+      _ForgotPasswordPageState();
 }
 
-class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
+class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
+  final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
-  bool _isLoading = false;
   bool _emailSent = false;
 
   @override
@@ -22,18 +26,36 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   }
 
   Future<void> _handleReset() async {
-    final error = Validators.email(_emailController.text);
-    if (error != null) return;
-    setState(() => _isLoading = true);
-    // TODO: Implement Firebase password reset
-    setState(() {
-      _isLoading = false;
-      _emailSent = true;
-    });
+    if (!_formKey.currentState!.validate()) return;
+    await ref
+        .read(authNotifierProvider.notifier)
+        .sendPasswordReset(_emailController.text);
+
+    // If no error occurred, mark as sent.
+    final currentState = ref.read(authNotifierProvider);
+    if (currentState.error == null) {
+      setState(() => _emailSent = true);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authNotifierProvider);
+
+    ref.listen<AuthState>(authNotifierProvider, (previous, next) {
+      if (next.error != null) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(
+              content: Text(next.error!),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        ref.read(authNotifierProvider.notifier).clearError();
+      }
+    });
+
     return Scaffold(
       appBar: AppBar(title: const Text('Reset Password')),
       body: Padding(
@@ -42,7 +64,11 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
             ? Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.mark_email_read, size: 64),
+                  Icon(
+                    Icons.mark_email_read,
+                    size: 64,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     'Check your email',
@@ -53,30 +79,38 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     'We sent a password reset link to your email.',
                     textAlign: TextAlign.center,
                   ),
+                  const SizedBox(height: 24),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Back to Sign In'),
+                  ),
                 ],
               )
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 24),
-                  const Text(
-                    'Enter your email to receive a password reset link.',
-                  ),
-                  const SizedBox(height: 24),
-                  AppTextField(
-                    label: 'Email',
-                    controller: _emailController,
-                    validator: Validators.email,
-                    keyboardType: TextInputType.emailAddress,
-                    prefixIcon: const Icon(Icons.email_outlined),
-                  ),
-                  const SizedBox(height: 24),
-                  AppButton(
-                    label: 'Send Reset Link',
-                    onPressed: _handleReset,
-                    isLoading: _isLoading,
-                  ),
-                ],
+            : Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 24),
+                    const Text(
+                      'Enter your email to receive a password reset link.',
+                    ),
+                    const SizedBox(height: 24),
+                    AppTextField(
+                      label: 'Email',
+                      controller: _emailController,
+                      validator: Validators.email,
+                      keyboardType: TextInputType.emailAddress,
+                      prefixIcon: const Icon(Icons.email_outlined),
+                    ),
+                    const SizedBox(height: 24),
+                    AppButton(
+                      label: 'Send Reset Link',
+                      onPressed: authState.isLoading ? null : _handleReset,
+                      isLoading: authState.isLoading,
+                    ),
+                  ],
+                ),
               ),
       ),
     );

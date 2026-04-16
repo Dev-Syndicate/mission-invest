@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/theme/display_mode.dart';
 import '../../../../core/theme/theme_provider.dart';
 
 class SettingsPage extends ConsumerWidget {
@@ -20,6 +21,7 @@ class SettingsPage extends ConsumerWidget {
             subtitle: Text(currentTheme.toUpperCase()),
             onTap: () => _showThemePicker(context, ref, currentTheme),
           ),
+          _DisplayModeTile(ref: ref),
           const Divider(),
           const _SectionHeader(title: 'Account'),
           ListTile(
@@ -70,6 +72,29 @@ class SettingsPage extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _DisplayModeTile extends StatelessWidget {
+  final WidgetRef ref;
+
+  const _DisplayModeTile({required this.ref});
+
+  @override
+  Widget build(BuildContext context) {
+    final mode = ref.watch(displayModeProvider);
+    final isWin = mode == DisplayMode.win;
+
+    return ListTile(
+      leading: Icon(isWin ? Icons.celebration : Icons.self_improvement),
+      title: const Text('Display Mode'),
+      subtitle: Text(isWin ? 'Win Mode' : 'Focus Mode'),
+      trailing: Switch(
+        value: isWin,
+        onChanged: (_) => ref.read(displayModeProvider.notifier).toggle(),
+      ),
+      onTap: () => ref.read(displayModeProvider.notifier).toggle(),
     );
   }
 }

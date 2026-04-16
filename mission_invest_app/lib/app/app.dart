@@ -15,7 +15,7 @@ class MissionInvestApp extends ConsumerWidget {
       title: 'Mission Invest',
       debugShowCheckedModeBanner: false,
       theme: themeData,
-      routerConfig: appRouter,
+      routerConfig: ref.watch(appRouterProvider),
     );
   }
 }

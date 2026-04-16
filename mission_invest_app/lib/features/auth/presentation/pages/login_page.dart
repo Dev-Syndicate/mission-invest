@@ -1,21 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 import '../../../../core/utils/validators.dart';
+import '../providers/auth_provider.dart';
 
-class LoginPage extends StatefulWidget {
+class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  ConsumerState<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _LoginPageState extends ConsumerState<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -26,13 +28,35 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() => _isLoading = true);
-    // TODO: Implement Firebase login
-    setState(() => _isLoading = false);
+    await ref.read(authNotifierProvider.notifier).signInWithEmail(
+          _emailController.text,
+          _passwordController.text,
+        );
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    await ref.read(authNotifierProvider.notifier).signInWithGoogle();
   }
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authNotifierProvider);
+
+    // Show error snackbar when auth state has an error.
+    ref.listen<AuthState>(authNotifierProvider, (previous, next) {
+      if (next.error != null) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(
+              content: Text(next.error!),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        ref.read(authNotifierProvider.notifier).clearError();
+      }
+    });
+
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -86,17 +110,15 @@ class _LoginPageState extends State<LoginPage> {
                 const SizedBox(height: 24),
                 AppButton(
                   label: 'Sign In',
-                  onPressed: _handleLogin,
-                  isLoading: _isLoading,
+                  onPressed: authState.isLoading ? null : _handleLogin,
+                  isLoading: authState.isLoading,
                 ),
                 const SizedBox(height: 16),
                 AppButton(
                   label: 'Sign in with Google',
                   icon: Icons.g_mobiledata,
                   isOutlined: true,
-                  onPressed: () {
-                    // TODO: Implement Google sign-in
-                  },
+                  onPressed: authState.isLoading ? null : _handleGoogleSignIn,
                 ),
                 const Spacer(),
                 Row(

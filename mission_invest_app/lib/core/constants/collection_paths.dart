@@ -11,4 +11,7 @@ class CollectionPaths {
   static const String featureFlags = 'featureFlags';
   static const String aiLogs = 'aiLogs';
   static const String streakRecoveries = 'streakRecoveries';
+  static const String marketplace = 'marketplace';
+  static const String seasons = 'seasons';
+  static const String teamMissions = 'teamMissions';
 }

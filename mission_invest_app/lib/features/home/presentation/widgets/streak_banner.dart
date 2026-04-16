@@ -1,22 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class StreakBanner extends StatelessWidget {
+import '../../../../core/theme/app_colors.dart';
+import '../providers/home_provider.dart';
+
+class StreakBanner extends ConsumerWidget {
   const StreakBanner({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // TODO: Get actual streak from provider
-    const globalStreak = 0;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final userProfile = ref.watch(currentUserProfileProvider);
+    final globalStreak = userProfile.valueOrNull?.currentGlobalStreak ?? 0;
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            Theme.of(context).colorScheme.primary,
-            Theme.of(context).colorScheme.secondary,
-          ],
+          colors: globalStreak > 0
+              ? [AppColors.streakFire, AppColors.warning]
+              : [
+                  Theme.of(context).colorScheme.primary,
+                  Theme.of(context).colorScheme.secondary,
+                ],
         ),
         borderRadius: BorderRadius.circular(16),
       ),
@@ -25,10 +31,10 @@ class StreakBanner extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.local_fire_department,
                 color: Colors.white,
-                size: 28,
+                size: globalStreak > 0 ? 32 : 28,
               ),
               const SizedBox(width: 8),
               Text(
@@ -38,13 +44,29 @@ class StreakBanner extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                     ),
               ),
+              if (globalStreak >= 7) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withAlpha(51),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    _streakLabel(globalStreak),
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                ),
+              ],
             ],
           ),
           const SizedBox(height: 8),
           Text(
-            globalStreak == 0
-                ? 'Start a mission to build your streak!'
-                : 'Keep it going! Log a contribution today.',
+            _motivationText(globalStreak),
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Colors.white.withAlpha(204),
                 ),
@@ -52,5 +74,19 @@ class StreakBanner extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _motivationText(int streak) {
+    if (streak == 0) return 'Start a mission to build your streak!';
+    if (streak < 3) return 'Great start! Keep going to build momentum.';
+    if (streak < 7) return 'You\'re on fire! Don\'t break the chain.';
+    if (streak < 30) return 'Incredible discipline! Keep it going!';
+    return 'Legendary streak! You\'re unstoppable!';
+  }
+
+  String _streakLabel(int streak) {
+    if (streak >= 30) return 'LEGENDARY';
+    if (streak >= 14) return 'ON FIRE';
+    return 'WARRIOR';
   }
 }

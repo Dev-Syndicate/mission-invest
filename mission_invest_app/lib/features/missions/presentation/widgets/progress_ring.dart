@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
+
 import '../../../../core/theme/app_colors.dart';
 
 class ProgressRing extends StatelessWidget {
   final double progress;
   final double size;
+  final String? centerLabel;
 
   const ProgressRing({
     super.key,
     required this.progress,
     this.size = 120,
+    this.centerLabel,
   });
 
   Color get _progressColor {
@@ -34,7 +37,7 @@ class ProgressRing extends StatelessWidget {
                 ),
           ),
           Text(
-            'funded',
+            centerLabel ?? 'funded',
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ],

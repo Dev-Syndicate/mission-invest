@@ -41,7 +41,15 @@ mixin _$MissionModel {
   double get completionProbability => throw _privateConstructorUsedError;
   String get status => throw _privateConstructorUsedError;
   String? get visionImageUrl => throw _privateConstructorUsedError;
-  String? get motivationMessage => throw _privateConstructorUsedError;
+  String? get motivationMessage =>
+      throw _privateConstructorUsedError; // Story card fields
+  String? get storyHeadline => throw _privateConstructorUsedError;
+  String? get personalNote => throw _privateConstructorUsedError;
+  String? get missionEmoji =>
+      throw _privateConstructorUsedError; // Commit contract fields
+  String get contractType => throw _privateConstructorUsedError;
+  String get contractStatus => throw _privateConstructorUsedError;
+  DateTime? get contractRecoveryDeadline => throw _privateConstructorUsedError;
   DateTime get createdAt => throw _privateConstructorUsedError;
   DateTime get updatedAt => throw _privateConstructorUsedError;
   DateTime? get completedAt => throw _privateConstructorUsedError;
@@ -85,6 +93,12 @@ abstract class $MissionModelCopyWith<$Res> {
     String status,
     String? visionImageUrl,
     String? motivationMessage,
+    String? storyHeadline,
+    String? personalNote,
+    String? missionEmoji,
+    String contractType,
+    String contractStatus,
+    DateTime? contractRecoveryDeadline,
     DateTime createdAt,
     DateTime updatedAt,
     DateTime? completedAt,
@@ -127,6 +141,12 @@ class _$MissionModelCopyWithImpl<$Res, $Val extends MissionModel>
     Object? status = null,
     Object? visionImageUrl = freezed,
     Object? motivationMessage = freezed,
+    Object? storyHeadline = freezed,
+    Object? personalNote = freezed,
+    Object? missionEmoji = freezed,
+    Object? contractType = null,
+    Object? contractStatus = null,
+    Object? contractRecoveryDeadline = freezed,
     Object? createdAt = null,
     Object? updatedAt = null,
     Object? completedAt = freezed,
@@ -217,6 +237,30 @@ class _$MissionModelCopyWithImpl<$Res, $Val extends MissionModel>
                 ? _value.motivationMessage
                 : motivationMessage // ignore: cast_nullable_to_non_nullable
                       as String?,
+            storyHeadline: freezed == storyHeadline
+                ? _value.storyHeadline
+                : storyHeadline // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            personalNote: freezed == personalNote
+                ? _value.personalNote
+                : personalNote // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            missionEmoji: freezed == missionEmoji
+                ? _value.missionEmoji
+                : missionEmoji // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            contractType: null == contractType
+                ? _value.contractType
+                : contractType // ignore: cast_nullable_to_non_nullable
+                      as String,
+            contractStatus: null == contractStatus
+                ? _value.contractStatus
+                : contractStatus // ignore: cast_nullable_to_non_nullable
+                      as String,
+            contractRecoveryDeadline: freezed == contractRecoveryDeadline
+                ? _value.contractRecoveryDeadline
+                : contractRecoveryDeadline // ignore: cast_nullable_to_non_nullable
+                      as DateTime?,
             createdAt: null == createdAt
                 ? _value.createdAt
                 : createdAt // ignore: cast_nullable_to_non_nullable
@@ -266,6 +310,12 @@ abstract class _$$MissionModelImplCopyWith<$Res>
     String status,
     String? visionImageUrl,
     String? motivationMessage,
+    String? storyHeadline,
+    String? personalNote,
+    String? missionEmoji,
+    String contractType,
+    String contractStatus,
+    DateTime? contractRecoveryDeadline,
     DateTime createdAt,
     DateTime updatedAt,
     DateTime? completedAt,
@@ -307,6 +357,12 @@ class __$$MissionModelImplCopyWithImpl<$Res>
     Object? status = null,
     Object? visionImageUrl = freezed,
     Object? motivationMessage = freezed,
+    Object? storyHeadline = freezed,
+    Object? personalNote = freezed,
+    Object? missionEmoji = freezed,
+    Object? contractType = null,
+    Object? contractStatus = null,
+    Object? contractRecoveryDeadline = freezed,
     Object? createdAt = null,
     Object? updatedAt = null,
     Object? completedAt = freezed,
@@ -397,6 +453,30 @@ class __$$MissionModelImplCopyWithImpl<$Res>
             ? _value.motivationMessage
             : motivationMessage // ignore: cast_nullable_to_non_nullable
                   as String?,
+        storyHeadline: freezed == storyHeadline
+            ? _value.storyHeadline
+            : storyHeadline // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        personalNote: freezed == personalNote
+            ? _value.personalNote
+            : personalNote // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        missionEmoji: freezed == missionEmoji
+            ? _value.missionEmoji
+            : missionEmoji // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        contractType: null == contractType
+            ? _value.contractType
+            : contractType // ignore: cast_nullable_to_non_nullable
+                  as String,
+        contractStatus: null == contractStatus
+            ? _value.contractStatus
+            : contractStatus // ignore: cast_nullable_to_non_nullable
+                  as String,
+        contractRecoveryDeadline: freezed == contractRecoveryDeadline
+            ? _value.contractRecoveryDeadline
+            : contractRecoveryDeadline // ignore: cast_nullable_to_non_nullable
+                  as DateTime?,
         createdAt: null == createdAt
             ? _value.createdAt
             : createdAt // ignore: cast_nullable_to_non_nullable
@@ -439,6 +519,12 @@ class _$MissionModelImpl implements _MissionModel {
     this.status = 'active',
     this.visionImageUrl,
     this.motivationMessage,
+    this.storyHeadline,
+    this.personalNote,
+    this.missionEmoji,
+    this.contractType = 'none',
+    this.contractStatus = 'none',
+    this.contractRecoveryDeadline,
     required this.createdAt,
     required this.updatedAt,
     this.completedAt,
@@ -497,6 +583,22 @@ class _$MissionModelImpl implements _MissionModel {
   final String? visionImageUrl;
   @override
   final String? motivationMessage;
+  // Story card fields
+  @override
+  final String? storyHeadline;
+  @override
+  final String? personalNote;
+  @override
+  final String? missionEmoji;
+  // Commit contract fields
+  @override
+  @JsonKey()
+  final String contractType;
+  @override
+  @JsonKey()
+  final String contractStatus;
+  @override
+  final DateTime? contractRecoveryDeadline;
   @override
   final DateTime createdAt;
   @override
@@ -506,7 +608,7 @@ class _$MissionModelImpl implements _MissionModel {
 
   @override
   String toString() {
-    return 'MissionModel(id: $id, userId: $userId, title: $title, category: $category, targetAmount: $targetAmount, savedAmount: $savedAmount, dailyTarget: $dailyTarget, frequency: $frequency, startDate: $startDate, endDate: $endDate, durationDays: $durationDays, currentStreak: $currentStreak, longestStreak: $longestStreak, lastContributionDate: $lastContributionDate, missedDays: $missedDays, recoveryUsedThisWeek: $recoveryUsedThisWeek, recoveryWeekStart: $recoveryWeekStart, completionProbability: $completionProbability, status: $status, visionImageUrl: $visionImageUrl, motivationMessage: $motivationMessage, createdAt: $createdAt, updatedAt: $updatedAt, completedAt: $completedAt)';
+    return 'MissionModel(id: $id, userId: $userId, title: $title, category: $category, targetAmount: $targetAmount, savedAmount: $savedAmount, dailyTarget: $dailyTarget, frequency: $frequency, startDate: $startDate, endDate: $endDate, durationDays: $durationDays, currentStreak: $currentStreak, longestStreak: $longestStreak, lastContributionDate: $lastContributionDate, missedDays: $missedDays, recoveryUsedThisWeek: $recoveryUsedThisWeek, recoveryWeekStart: $recoveryWeekStart, completionProbability: $completionProbability, status: $status, visionImageUrl: $visionImageUrl, motivationMessage: $motivationMessage, storyHeadline: $storyHeadline, personalNote: $personalNote, missionEmoji: $missionEmoji, contractType: $contractType, contractStatus: $contractStatus, contractRecoveryDeadline: $contractRecoveryDeadline, createdAt: $createdAt, updatedAt: $updatedAt, completedAt: $completedAt)';
   }
 
   @override
@@ -551,6 +653,21 @@ class _$MissionModelImpl implements _MissionModel {
                 other.visionImageUrl == visionImageUrl) &&
             (identical(other.motivationMessage, motivationMessage) ||
                 other.motivationMessage == motivationMessage) &&
+            (identical(other.storyHeadline, storyHeadline) ||
+                other.storyHeadline == storyHeadline) &&
+            (identical(other.personalNote, personalNote) ||
+                other.personalNote == personalNote) &&
+            (identical(other.missionEmoji, missionEmoji) ||
+                other.missionEmoji == missionEmoji) &&
+            (identical(other.contractType, contractType) ||
+                other.contractType == contractType) &&
+            (identical(other.contractStatus, contractStatus) ||
+                other.contractStatus == contractStatus) &&
+            (identical(
+                  other.contractRecoveryDeadline,
+                  contractRecoveryDeadline,
+                ) ||
+                other.contractRecoveryDeadline == contractRecoveryDeadline) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
             (identical(other.updatedAt, updatedAt) ||
@@ -584,6 +701,12 @@ class _$MissionModelImpl implements _MissionModel {
     status,
     visionImageUrl,
     motivationMessage,
+    storyHeadline,
+    personalNote,
+    missionEmoji,
+    contractType,
+    contractStatus,
+    contractRecoveryDeadline,
     createdAt,
     updatedAt,
     completedAt,
@@ -626,6 +749,12 @@ abstract class _MissionModel implements MissionModel {
     final String status,
     final String? visionImageUrl,
     final String? motivationMessage,
+    final String? storyHeadline,
+    final String? personalNote,
+    final String? missionEmoji,
+    final String contractType,
+    final String contractStatus,
+    final DateTime? contractRecoveryDeadline,
     required final DateTime createdAt,
     required final DateTime updatedAt,
     final DateTime? completedAt,
@@ -675,7 +804,19 @@ abstract class _MissionModel implements MissionModel {
   @override
   String? get visionImageUrl;
   @override
-  String? get motivationMessage;
+  String? get motivationMessage; // Story card fields
+  @override
+  String? get storyHeadline;
+  @override
+  String? get personalNote;
+  @override
+  String? get missionEmoji; // Commit contract fields
+  @override
+  String get contractType;
+  @override
+  String get contractStatus;
+  @override
+  DateTime? get contractRecoveryDeadline;
   @override
   DateTime get createdAt;
   @override

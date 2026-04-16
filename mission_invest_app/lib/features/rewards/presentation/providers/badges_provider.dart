@@ -1,14 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../data/repositories/badge_repository.dart';
 import '../../data/models/badge_model.dart';
-
-final badgeRepositoryProvider = Provider<BadgeRepository>((ref) {
-  return BadgeRepository();
-});
+import '../../../home/presentation/providers/home_provider.dart';
 
 final userBadgesProvider = StreamProvider<List<BadgeModel>>((ref) {
-  // TODO: Get userId from auth state
-  return Stream.value([]);
+  final userId = ref.watch(currentUserIdProvider);
+  if (userId == null) return Stream.value([]);
+  return ref.watch(badgeRepositoryProvider).watchUserBadges(userId);
 });
 
 final badgeCountProvider = Provider<int>((ref) {

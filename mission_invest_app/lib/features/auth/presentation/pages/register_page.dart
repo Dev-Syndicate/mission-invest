@@ -1,40 +1,62 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 import '../../../../core/utils/validators.dart';
+import '../providers/auth_provider.dart';
 
-class RegisterPage extends StatefulWidget {
+class RegisterPage extends ConsumerStatefulWidget {
   const RegisterPage({super.key});
 
   @override
-  State<RegisterPage> createState() => _RegisterPageState();
+  ConsumerState<RegisterPage> createState() => _RegisterPageState();
 }
 
-class _RegisterPageState extends State<RegisterPage> {
+class _RegisterPageState extends ConsumerState<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _isLoading = false;
+  final _confirmPasswordController = TextEditingController();
 
   @override
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() => _isLoading = true);
-    // TODO: Implement Firebase registration
-    setState(() => _isLoading = false);
+    await ref.read(authNotifierProvider.notifier).signUpWithEmail(
+          _emailController.text,
+          _passwordController.text,
+          _nameController.text,
+        );
   }
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authNotifierProvider);
+
+    ref.listen<AuthState>(authNotifierProvider, (previous, next) {
+      if (next.error != null) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(
+              content: Text(next.error!),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        ref.read(authNotifierProvider.notifier).clearError();
+      }
+    });
+
     return Scaffold(
       appBar: AppBar(title: const Text('Create Account')),
       body: SafeArea(
@@ -49,7 +71,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   label: 'Full Name',
                   controller: _nameController,
                   validator: (v) =>
-                      v == null || v.isEmpty ? 'Name is required' : null,
+                      v == null || v.trim().isEmpty ? 'Name is required' : null,
                   prefixIcon: const Icon(Icons.person_outlined),
                 ),
                 const SizedBox(height: 16),
@@ -68,11 +90,27 @@ class _RegisterPageState extends State<RegisterPage> {
                   obscureText: true,
                   prefixIcon: const Icon(Icons.lock_outlined),
                 ),
+                const SizedBox(height: 16),
+                AppTextField(
+                  label: 'Confirm Password',
+                  controller: _confirmPasswordController,
+                  validator: (v) {
+                    if (v == null || v.isEmpty) {
+                      return 'Please confirm your password';
+                    }
+                    if (v != _passwordController.text) {
+                      return 'Passwords do not match';
+                    }
+                    return null;
+                  },
+                  obscureText: true,
+                  prefixIcon: const Icon(Icons.lock_outlined),
+                ),
                 const SizedBox(height: 32),
                 AppButton(
                   label: 'Create Account',
-                  onPressed: _handleRegister,
-                  isLoading: _isLoading,
+                  onPressed: authState.isLoading ? null : _handleRegister,
+                  isLoading: authState.isLoading,
                 ),
                 const SizedBox(height: 16),
                 Row(

@@ -33,6 +33,14 @@ class MissionModel with _$MissionModel {
     @Default('active') String status,
     String? visionImageUrl,
     String? motivationMessage,
+    // Story card fields
+    String? storyHeadline,
+    String? personalNote,
+    String? missionEmoji,
+    // Commit contract fields
+    @Default('none') String contractType,
+    @Default('none') String contractStatus,
+    DateTime? contractRecoveryDeadline,
     required DateTime createdAt,
     required DateTime updatedAt,
     DateTime? completedAt,
