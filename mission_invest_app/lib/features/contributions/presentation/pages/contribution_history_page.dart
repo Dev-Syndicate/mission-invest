@@ -33,11 +33,28 @@ class ContributionHistoryPage extends ConsumerWidget {
         ),
         data: (contributions) {
           if (contributions.isEmpty) {
-            return const EmptyState(
-              icon: Icons.history,
-              title: 'No contributions yet',
-              subtitle:
-                  'Log your first contribution to start tracking progress.',
+            return RefreshIndicator(
+              onRefresh: () async {
+                ref.invalidate(
+                  missionContributionsProvider((missionId: missionId, userId: userId)),
+                );
+              },
+              child: LayoutBuilder(
+                builder: (context, constraints) => SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                    child: const Center(
+                      child: EmptyState(
+                        icon: Icons.history,
+                        title: 'No contributions yet',
+                        subtitle:
+                            'Log your first contribution to start tracking progress.',
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             );
           }
 
@@ -94,19 +111,27 @@ class ContributionHistoryPage extends ConsumerWidget {
               ),
               // List
               Expanded(
-                child: ListView.separated(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: contributions.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1),
-                  itemBuilder: (context, index) {
-                    final c = contributions[index];
-                    return ContributionTile(
-                      amount: c.amount,
-                      date: c.date,
-                      streakDay: c.streakDay,
-                      note: c.note,
+                child: RefreshIndicator(
+                  onRefresh: () async {
+                    ref.invalidate(
+                      missionContributionsProvider((missionId: missionId, userId: userId)),
                     );
                   },
+                  child: ListView.separated(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: contributions.length,
+                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    itemBuilder: (context, index) {
+                      final c = contributions[index];
+                      return ContributionTile(
+                        amount: c.amount,
+                        date: c.date,
+                        streakDay: c.streakDay,
+                        note: c.note,
+                      );
+                    },
+                  ),
                 ),
               ),
             ],

@@ -52,21 +52,44 @@ class _AdminAiReviewPageState extends ConsumerState<AdminAiReviewPage> {
               ),
               data: (logs) {
                 if (logs.isEmpty) {
-                  return Center(
-                    child: Text(
-                      _flaggedOnly
-                          ? 'No flagged AI logs.'
-                          : 'No AI logs yet.',
-                      style: Theme.of(context).textTheme.bodyLarge,
+                  return RefreshIndicator(
+                    onRefresh: () async {
+                      ref.invalidate(
+                        _flaggedOnly ? flaggedAiLogsProvider : aiLogsProvider,
+                      );
+                    },
+                    child: LayoutBuilder(
+                      builder: (context, constraints) => SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                          child: Center(
+                            child: Text(
+                              _flaggedOnly
+                                  ? 'No flagged AI logs.'
+                                  : 'No AI logs yet.',
+                              style: Theme.of(context).textTheme.bodyLarge,
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   );
                 }
 
-                return ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: logs.length,
-                  itemBuilder: (context, index) =>
-                      _AiLogCard(log: logs[index]),
+                return RefreshIndicator(
+                  onRefresh: () async {
+                    ref.invalidate(
+                      _flaggedOnly ? flaggedAiLogsProvider : aiLogsProvider,
+                    );
+                  },
+                  child: ListView.builder(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: logs.length,
+                    itemBuilder: (context, index) =>
+                        _AiLogCard(log: logs[index]),
+                  ),
                 );
               },
             ),

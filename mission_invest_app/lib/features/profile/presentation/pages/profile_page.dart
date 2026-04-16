@@ -39,119 +39,125 @@ class ProfilePage extends ConsumerWidget {
             return const Center(child: Text('No profile found.'));
           }
 
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              // Avatar
-              Center(
-                child: CircleAvatar(
-                  radius: 48,
-                  backgroundImage: user.photoUrl != null
-                      ? NetworkImage(user.photoUrl!)
-                      : null,
-                  child: user.photoUrl == null
-                      ? const Icon(Icons.person, size: 48)
-                      : null,
+          return RefreshIndicator(
+            onRefresh: () async {
+              ref.invalidate(currentUserProfileProvider);
+            },
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16),
+              children: [
+                // Avatar
+                Center(
+                  child: CircleAvatar(
+                    radius: 48,
+                    backgroundImage: user.photoUrl != null
+                        ? NetworkImage(user.photoUrl!)
+                        : null,
+                    child: user.photoUrl == null
+                        ? const Icon(Icons.person, size: 48)
+                        : null,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-              // Display name
-              Center(
-                child: Text(
-                  user.displayName,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                // Display name
+                Center(
+                  child: Text(
+                    user.displayName,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
                 ),
-              ),
-              Center(
-                child: Text(
-                  user.email,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withAlpha(153),
-                      ),
+                Center(
+                  child: Text(
+                    user.email,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withAlpha(153),
+                        ),
+                  ),
                 ),
-              ),
 
-              const SizedBox(height: 24),
+                const SizedBox(height: 24),
 
-              // Financial Confidence Score dial
-              const ConfidenceScoreDial(),
+                // Financial Confidence Score dial
+                const ConfidenceScoreDial(),
 
-              const SizedBox(height: 24),
+                const SizedBox(height: 24),
 
-              // Stats card
-              _StatCard(
-                children: [
-                  _StatItem(
-                    label: 'Total\nMissions',
-                    value: '${user.totalMissionsCreated}',
+                // Stats card
+                _StatCard(
+                  children: [
+                    _StatItem(
+                      label: 'Total\nMissions',
+                      value: '${user.totalMissionsCreated}',
+                    ),
+                    _StatItem(
+                      label: 'Completion\nRate',
+                      value: user.totalMissionsCreated > 0
+                          ? '${((user.totalMissionsCompleted / user.totalMissionsCreated) * 100).round()}%'
+                          : '0%',
+                    ),
+                    _StatItem(
+                      label: 'Longest\nStreak',
+                      value: '${user.longestGlobalStreak}',
+                    ),
+                    _StatItem(
+                      label: 'Total\nSaved',
+                      value: CurrencyFormatter.format(user.totalSaved),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+
+                // Display mode toggle (inline card)
+                _DisplayModeCard(ref: ref),
+
+                const SizedBox(height: 16),
+
+                // Admin panel (only visible for admins)
+                if (user.isAdmin)
+                  ListTile(
+                    leading: const Icon(Icons.admin_panel_settings),
+                    title: const Text('Admin Panel'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => context.push('/admin'),
                   ),
-                  _StatItem(
-                    label: 'Completion\nRate',
-                    value: user.totalMissionsCreated > 0
-                        ? '${((user.totalMissionsCompleted / user.totalMissionsCreated) * 100).round()}%'
-                        : '0%',
-                  ),
-                  _StatItem(
-                    label: 'Longest\nStreak',
-                    value: '${user.longestGlobalStreak}',
-                  ),
-                  _StatItem(
-                    label: 'Total\nSaved',
-                    value: CurrencyFormatter.format(user.totalSaved),
-                  ),
-                ],
-              ),
 
-              const SizedBox(height: 16),
-
-              // Display mode toggle (inline card)
-              _DisplayModeCard(ref: ref),
-
-              const SizedBox(height: 16),
-
-              // Admin panel (only visible for admins)
-              if (user.isAdmin)
+                // Navigation items
                 ListTile(
-                  leading: const Icon(Icons.admin_panel_settings),
-                  title: const Text('Admin Panel'),
+                  leading: const Icon(Icons.notifications_outlined),
+                  title: const Text('Notification Settings'),
                   trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push('/admin'),
+                  onTap: () => context.pushNamed('notificationSettings'),
                 ),
 
-              // Navigation items
-              ListTile(
-                leading: const Icon(Icons.notifications_outlined),
-                title: const Text('Notification Settings'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => context.pushNamed('notificationSettings'),
-              ),
+                const SizedBox(height: 8),
 
-              const SizedBox(height: 8),
-
-              // Sign out button
-              OutlinedButton.icon(
-                onPressed: () {
-                  ref.read(authNotifierProvider.notifier).signOut();
-                },
-                icon: const Icon(Icons.logout),
-                label: const Text('Sign Out'),
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 48),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                // Sign out button
+                OutlinedButton.icon(
+                  onPressed: () {
+                    ref.read(authNotifierProvider.notifier).signOut();
+                  },
+                  icon: const Icon(Icons.logout),
+                  label: const Text('Sign Out'),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 48),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    foregroundColor: Theme.of(context).colorScheme.error,
                   ),
-                  foregroundColor: Theme.of(context).colorScheme.error,
                 ),
-              ),
 
-              const SizedBox(height: 32),
-            ],
+                const SizedBox(height: 32),
+              ],
+            ),
           );
         },
       ),

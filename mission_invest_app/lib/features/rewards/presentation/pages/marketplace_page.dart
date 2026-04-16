@@ -85,35 +85,49 @@ class MarketplacePage extends ConsumerWidget {
               ),
               data: (items) {
                 if (items.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.storefront_outlined,
-                          size: 64,
-                          color: Theme.of(context)
-                              .colorScheme
-                              .primary
-                              .withAlpha(128),
+                  return RefreshIndicator(
+                    onRefresh: () async {
+                      ref.invalidate(filteredMarketplaceItemsProvider);
+                      ref.invalidate(userOwnedItemsProvider);
+                    },
+                    child: LayoutBuilder(
+                      builder: (context, constraints) => SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                          child: Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.storefront_outlined,
+                                  size: 64,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .primary
+                                      .withAlpha(128),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'No items available',
+                                  style: Theme.of(context).textTheme.titleMedium,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Check back later for new items!',
+                                  style:
+                                      Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurface
+                                                .withAlpha(153),
+                                          ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No items available',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Check back later for new items!',
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurface
-                                        .withAlpha(153),
-                                  ),
-                        ),
-                      ],
+                      ),
                     ),
                   );
                 }
@@ -121,37 +135,44 @@ class MarketplacePage extends ConsumerWidget {
                 final ownedIds =
                     ownedItemsAsync.valueOrNull ?? <String>[];
 
-                return GridView.builder(
-                  padding: const EdgeInsets.all(16),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    childAspectRatio: 0.75,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                  ),
-                  itemCount: items.length,
-                  itemBuilder: (context, index) {
-                    final item = items[index];
-                    final isOwned = ownedIds.contains(item.id);
-                    return MarketplaceItemCard(
-                      item: item,
-                      isOwned: isOwned,
-                      onTap: () => _showItemDetail(
-                        context,
-                        ref,
-                        item,
-                        isOwned,
-                        xpBalance,
-                      ),
-                    ).animate().fadeIn(
-                          duration: 300.ms,
-                          delay: (50 * index).ms,
-                        ).slideY(
-                          begin: 0.1,
-                          duration: 300.ms,
-                          delay: (50 * index).ms,
-                        );
+                return RefreshIndicator(
+                  onRefresh: () async {
+                    ref.invalidate(filteredMarketplaceItemsProvider);
+                    ref.invalidate(userOwnedItemsProvider);
                   },
+                  child: GridView.builder(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(16),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      childAspectRatio: 0.75,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                    ),
+                    itemCount: items.length,
+                    itemBuilder: (context, index) {
+                      final item = items[index];
+                      final isOwned = ownedIds.contains(item.id);
+                      return MarketplaceItemCard(
+                        item: item,
+                        isOwned: isOwned,
+                        onTap: () => _showItemDetail(
+                          context,
+                          ref,
+                          item,
+                          isOwned,
+                          xpBalance,
+                        ),
+                      ).animate().fadeIn(
+                            duration: 300.ms,
+                            delay: (50 * index).ms,
+                          ).slideY(
+                            begin: 0.1,
+                            duration: 300.ms,
+                            delay: (50 * index).ms,
+                          );
+                    },
+                  ),
                 );
               },
             ),

@@ -31,12 +31,12 @@ class AdminAnalyticsPage extends ConsumerWidget {
           message: error.toString(),
           onRetry: () => ref.invalidate(adminAnalyticsProvider),
         ),
-        data: (data) => _buildDashboard(context, data),
+        data: (data) => _buildDashboard(context, ref, data),
       ),
     );
   }
 
-  Widget _buildDashboard(BuildContext context, Map<String, dynamic> data) {
+  Widget _buildDashboard(BuildContext context, WidgetRef ref, Map<String, dynamic> data) {
     final currencyFormat = NumberFormat.currency(symbol: '\$', decimalDigits: 0);
     final percentFormat = NumberFormat.percentPattern();
 
@@ -49,93 +49,99 @@ class AdminAnalyticsPage extends ConsumerWidget {
         .format((data['avgCompletionRate'] ?? 0) / 100);
     final retentionRate = data['retentionRate'] ?? 0;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: 1.4,
-            children: [
-              StatCard(
-                title: 'Total Users',
-                value: totalUsers,
-                icon: Icons.people,
-                color: Colors.blue,
-              ),
-              StatCard(
-                title: 'Active Users',
-                value: activeUsers,
-                icon: Icons.person_outline,
-                color: Colors.green,
-              ),
-              StatCard(
-                title: 'Total Missions',
-                value: totalMissions,
-                icon: Icons.flag,
-                color: Colors.orange,
-              ),
-              StatCard(
-                title: 'Completed Missions',
-                value: completedMissions,
-                icon: Icons.check_circle,
-                color: Colors.teal,
-              ),
-              StatCard(
-                title: 'Total Saved',
-                value: totalSaved,
-                icon: Icons.savings,
-                color: Colors.purple,
-              ),
-              StatCard(
-                title: 'Avg Completion Rate',
-                value: avgCompletionRate,
-                icon: Icons.trending_up,
-                color: Colors.indigo,
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.replay,
-                    color: Theme.of(context).colorScheme.primary,
-                    size: 32,
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Retention Rate',
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '$retentionRate%',
-                          style: Theme.of(context)
-                              .textTheme
-                              .headlineSmall
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                      ],
+    return RefreshIndicator(
+      onRefresh: () async {
+        ref.invalidate(adminAnalyticsProvider);
+      },
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            GridView.count(
+              crossAxisCount: 2,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: 1.4,
+              children: [
+                StatCard(
+                  title: 'Total Users',
+                  value: totalUsers,
+                  icon: Icons.people,
+                  color: Colors.blue,
+                ),
+                StatCard(
+                  title: 'Active Users',
+                  value: activeUsers,
+                  icon: Icons.person_outline,
+                  color: Colors.green,
+                ),
+                StatCard(
+                  title: 'Total Missions',
+                  value: totalMissions,
+                  icon: Icons.flag,
+                  color: Colors.orange,
+                ),
+                StatCard(
+                  title: 'Completed Missions',
+                  value: completedMissions,
+                  icon: Icons.check_circle,
+                  color: Colors.teal,
+                ),
+                StatCard(
+                  title: 'Total Saved',
+                  value: totalSaved,
+                  icon: Icons.savings,
+                  color: Colors.purple,
+                ),
+                StatCard(
+                  title: 'Avg Completion Rate',
+                  value: avgCompletionRate,
+                  icon: Icons.trending_up,
+                  color: Colors.indigo,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.replay,
+                      color: Theme.of(context).colorScheme.primary,
+                      size: 32,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Retention Rate',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '$retentionRate%',
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineSmall
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

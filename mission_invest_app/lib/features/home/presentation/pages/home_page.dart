@@ -63,93 +63,105 @@ class HomePage extends ConsumerWidget {
         },
         data: (missions) {
           if (missions.isEmpty) {
-            return ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                const StreakBanner(),
-                const SizedBox(height: 32),
-                EmptyState(
-                  icon: Icons.rocket_launch_outlined,
-                  title: 'No active missions',
-                  subtitle:
-                      'Create your first mission and start saving towards your goal!',
-                  actionLabel: 'Create Your First Mission',
-                  onAction: () => context.pushNamed('missionCreate'),
-                ),
-                const RecentBadgesRow(),
-              ],
+            return RefreshIndicator(
+              onRefresh: () async {
+                ref.invalidate(homeActiveMissionsProvider);
+              },
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
+                children: [
+                  const StreakBanner(),
+                  const SizedBox(height: 32),
+                  EmptyState(
+                    icon: Icons.rocket_launch_outlined,
+                    title: 'No active missions',
+                    subtitle:
+                        'Create your first mission and start saving towards your goal!',
+                    actionLabel: 'Create Your First Mission',
+                    onAction: () => context.pushNamed('missionCreate'),
+                  ),
+                  const RecentBadgesRow(),
+                ],
+              ),
             );
           }
 
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              const StreakBanner(),
-              const SizedBox(height: 24),
+          return RefreshIndicator(
+            onRefresh: () async {
+              ref.invalidate(homeActiveMissionsProvider);
+            },
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16),
+              children: [
+                const StreakBanner(),
+                const SizedBox(height: 24),
 
-              // Active Missions header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Active Missions',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                  TextButton.icon(
-                    onPressed: () => context.pushNamed('missionCreate'),
-                    icon: const Icon(Icons.add, size: 18),
-                    label: const Text('New'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-
-              // Mission cards
-              ...missions.map((mission) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: MissionCard(
-                      missionId: mission.id,
-                      title: mission.title,
-                      categoryEmoji: categoryEmoji(mission.category),
-                      progress: mission.progressPercentage,
-                      streak: mission.currentStreak,
-                      daysLeft: mission.daysRemaining,
-                      savedAmount: mission.savedAmount,
-                      targetAmount: mission.targetAmount,
-                      dailyTarget: mission.dailyTarget,
-                      onTap: () => context.push('/missions/${mission.id}'),
+                // Active Missions header
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Active Missions',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
                     ),
-                  )),
-
-              // Seasons & Teams entry points
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: _HomeEntryCard(
-                      icon: Icons.emoji_events_outlined,
-                      label: 'Seasons',
-                      onTap: () => context.push('/seasons'),
+                    TextButton.icon(
+                      onPressed: () => context.pushNamed('missionCreate'),
+                      icon: const Icon(Icons.add, size: 18),
+                      label: const Text('New'),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _HomeEntryCard(
-                      icon: Icons.groups_outlined,
-                      label: 'Teams',
-                      onTap: () => context.push('/teams'),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
+                  ],
+                ),
+                const SizedBox(height: 12),
 
-              // Recent badges
-              const RecentBadgesRow(),
-              const SizedBox(height: 16),
-            ],
+                // Mission cards
+                ...missions.map((mission) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: MissionCard(
+                        missionId: mission.id,
+                        title: mission.title,
+                        categoryEmoji: categoryEmoji(mission.category),
+                        progress: mission.progressPercentage,
+                        streak: mission.currentStreak,
+                        daysLeft: mission.daysRemaining,
+                        savedAmount: mission.savedAmount,
+                        targetAmount: mission.targetAmount,
+                        dailyTarget: mission.dailyTarget,
+                        onTap: () => context.push('/missions/${mission.id}'),
+                      ),
+                    )),
+
+                // Seasons & Teams entry points
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _HomeEntryCard(
+                        icon: Icons.emoji_events_outlined,
+                        label: 'Seasons',
+                        onTap: () => context.push('/seasons'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _HomeEntryCard(
+                        icon: Icons.groups_outlined,
+                        label: 'Teams',
+                        onTap: () => context.push('/teams'),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Recent badges
+                const RecentBadgesRow(),
+                const SizedBox(height: 16),
+              ],
+            ),
           );
         },
       ),

@@ -21,66 +21,87 @@ class MissionListPage extends ConsumerWidget {
         error: (e, _) => Center(child: Text('Error: $e')),
         data: (missions) {
           if (missions.isEmpty) {
-            return EmptyState(
-              icon: Icons.flag_outlined,
-              title: 'No missions yet',
-              subtitle:
-                  'Create your first savings mission and start saving!',
-              actionLabel: 'Create Mission',
-              onAction: () => context.pushNamed('missionCreate'),
+            return RefreshIndicator(
+              onRefresh: () async {
+                ref.invalidate(allMissionsProvider);
+              },
+              child: LayoutBuilder(
+                builder: (context, constraints) => SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                    child: Center(
+                      child: EmptyState(
+                        icon: Icons.flag_outlined,
+                        title: 'No missions yet',
+                        subtitle:
+                            'Create your first savings mission and start saving!',
+                        actionLabel: 'Create Mission',
+                        onAction: () => context.pushNamed('missionCreate'),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             );
           }
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: missions.length,
-            itemBuilder: (context, index) {
-              final mission = missions[index];
-              final progress = mission.progressPercentage;
-
-              return Card(
-                margin: const EdgeInsets.only(bottom: 12),
-                child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: Theme.of(context)
-                        .colorScheme
-                        .primary
-                        .withAlpha(30),
-                    child: Text(
-                      mission.missionEmoji ??
-                          categoryEmoji(mission.category),
-                      style: const TextStyle(fontSize: 20),
-                    ),
-                  ),
-                  title: Text(
-                    mission.title,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 4),
-                      LinearProgressIndicator(
-                        value: progress,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${(progress * 100).toStringAsFixed(0)}% \u2022 '
-                        '${mission.daysRemaining} days left \u2022 '
-                        '\u{1F525} ${mission.currentStreak}',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ],
-                  ),
-                  trailing: _StatusChip(status: mission.status),
-                  onTap: () =>
-                      context.pushNamed('missionDetail', pathParameters: {
-                    'missionId': mission.id,
-                  }),
-                ),
-              );
+          return RefreshIndicator(
+            onRefresh: () async {
+              ref.invalidate(allMissionsProvider);
             },
+            child: ListView.builder(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16),
+              itemCount: missions.length,
+              itemBuilder: (context, index) {
+                final mission = missions[index];
+                final progress = mission.progressPercentage;
+
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withAlpha(30),
+                      child: Text(
+                        mission.missionEmoji ??
+                            categoryEmoji(mission.category),
+                        style: const TextStyle(fontSize: 20),
+                      ),
+                    ),
+                    title: Text(
+                      mission.title,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 4),
+                        LinearProgressIndicator(
+                          value: progress,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${(progress * 100).toStringAsFixed(0)}% \u2022 '
+                          '${mission.daysRemaining} days left \u2022 '
+                          '\u{1F525} ${mission.currentStreak}',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                    trailing: _StatusChip(status: mission.status),
+                    onTap: () =>
+                        context.pushNamed('missionDetail', pathParameters: {
+                      'missionId': mission.id,
+                    }),
+                  ),
+                );
+              },
+            ),
           );
         },
       ),

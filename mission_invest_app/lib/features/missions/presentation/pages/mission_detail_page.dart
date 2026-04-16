@@ -70,7 +70,7 @@ class MissionDetailPage extends ConsumerWidget {
   }
 }
 
-class _MissionDetailBody extends StatelessWidget {
+class _MissionDetailBody extends ConsumerWidget {
   final MissionModel mission;
   final String missionId;
 
@@ -80,11 +80,16 @@ class _MissionDetailBody extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
 
-    return ListView(
-      padding: const EdgeInsets.all(16),
+    return RefreshIndicator(
+      onRefresh: () async {
+        ref.invalidate(missionDetailProvider(missionId));
+      },
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
       children: [
         // Status badge (if not active)
         if (!mission.isActive) ...[
@@ -326,7 +331,8 @@ class _MissionDetailBody extends StatelessWidget {
         ],
 
         const SizedBox(height: 32),
-      ],
+        ],
+      ),
     );
   }
 }

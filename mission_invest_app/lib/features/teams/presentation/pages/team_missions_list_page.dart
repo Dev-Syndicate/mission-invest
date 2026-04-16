@@ -35,24 +35,45 @@ class TeamMissionsListPage extends ConsumerWidget {
         ),
         data: (teams) {
           if (teams.isEmpty) {
-            return const EmptyState(
-              icon: Icons.groups_outlined,
-              title: 'No team missions yet',
-              subtitle:
-                  'Create a team mission and invite friends to save together!',
+            return RefreshIndicator(
+              onRefresh: () async {
+                ref.invalidate(currentUserTeamMissionsProvider);
+              },
+              child: LayoutBuilder(
+                builder: (context, constraints) => SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                    child: const Center(
+                      child: EmptyState(
+                        icon: Icons.groups_outlined,
+                        title: 'No team missions yet',
+                        subtitle:
+                            'Create a team mission and invite friends to save together!',
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             );
           }
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: teams.length,
-            itemBuilder: (context, index) {
-              final team = teams[index];
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _TeamCard(team: team, theme: theme),
-              );
+          return RefreshIndicator(
+            onRefresh: () async {
+              ref.invalidate(currentUserTeamMissionsProvider);
             },
+            child: ListView.builder(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16),
+              itemCount: teams.length,
+              itemBuilder: (context, index) {
+                final team = teams[index];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _TeamCard(team: team, theme: theme),
+                );
+              },
+            ),
           );
         },
       ),

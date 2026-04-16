@@ -86,7 +86,27 @@ class _AdminUsersPageState extends ConsumerState<AdminUsersPage> {
               ),
               data: (users) {
                 final filtered = _filterUsers(users);
-                return UserTable(users: filtered);
+                return RefreshIndicator(
+                  onRefresh: () async {
+                    ref.invalidate(adminUsersProvider);
+                  },
+                  child: filtered.isEmpty
+                      ? LayoutBuilder(
+                          builder: (context, constraints) => SingleChildScrollView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                              child: const Center(
+                                child: Padding(
+                                  padding: EdgeInsets.all(32),
+                                  child: Text('No users found.'),
+                                ),
+                              ),
+                            ),
+                          ),
+                        )
+                      : UserTable(users: filtered),
+                );
               },
             ),
           ),

@@ -30,23 +30,44 @@ class SeasonsPage extends ConsumerWidget {
         ),
         data: (seasons) {
           if (seasons.isEmpty) {
-            return const EmptyState(
-              icon: Icons.emoji_events_outlined,
-              title: 'No active seasons',
-              subtitle: 'Check back soon for new challenge seasons!',
+            return RefreshIndicator(
+              onRefresh: () async {
+                ref.invalidate(currentActiveSeasonsProvider);
+              },
+              child: LayoutBuilder(
+                builder: (context, constraints) => SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                    child: const Center(
+                      child: EmptyState(
+                        icon: Icons.emoji_events_outlined,
+                        title: 'No active seasons',
+                        subtitle: 'Check back soon for new challenge seasons!',
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             );
           }
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: seasons.length,
-            itemBuilder: (context, index) {
-              final season = seasons[index];
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: _SeasonBannerCard(season: season),
-              );
+          return RefreshIndicator(
+            onRefresh: () async {
+              ref.invalidate(currentActiveSeasonsProvider);
             },
+            child: ListView.builder(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16),
+              itemCount: seasons.length,
+              itemBuilder: (context, index) {
+                final season = seasons[index];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: _SeasonBannerCard(season: season),
+                );
+              },
+            ),
           );
         },
       ),

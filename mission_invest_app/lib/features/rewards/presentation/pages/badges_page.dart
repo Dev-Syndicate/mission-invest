@@ -107,51 +107,74 @@ class BadgesPage extends ConsumerWidget {
                   Center(child: Text('Error loading badges: $err')),
               data: (badges) {
                 if (badges.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.emoji_events_outlined,
-                          size: 64,
-                          color: theme.colorScheme.primary.withAlpha(128),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No badges earned yet',
-                          style: theme.textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Complete missions and build streaks to earn badges!',
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurface
-                                .withAlpha(153),
+                  return RefreshIndicator(
+                    onRefresh: () async {
+                      ref.invalidate(userBadgesProvider);
+                      ref.invalidate(userXpBalanceProvider);
+                      ref.invalidate(userXpTotalEarnedProvider);
+                    },
+                    child: LayoutBuilder(
+                      builder: (context, constraints) => SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                          child: Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.emoji_events_outlined,
+                                  size: 64,
+                                  color: theme.colorScheme.primary.withAlpha(128),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'No badges earned yet',
+                                  style: theme.textTheme.titleMedium,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Complete missions and build streaks to earn badges!',
+                                  textAlign: TextAlign.center,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: theme.colorScheme.onSurface
+                                        .withAlpha(153),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      ],
+                      ),
                     ),
                   );
                 }
 
-                return ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: badges.length,
-                  itemBuilder: (context, index) {
-                    final badge = badges[index];
-                    return _BadgeListTile(badge: badge)
-                        .animate()
-                        .fadeIn(
-                          duration: 300.ms,
-                          delay: (50 * index).ms,
-                        )
-                        .slideX(
-                          begin: 0.05,
-                          duration: 300.ms,
-                          delay: (50 * index).ms,
-                        );
+                return RefreshIndicator(
+                  onRefresh: () async {
+                    ref.invalidate(userBadgesProvider);
+                    ref.invalidate(userXpBalanceProvider);
+                    ref.invalidate(userXpTotalEarnedProvider);
                   },
+                  child: ListView.builder(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: badges.length,
+                    itemBuilder: (context, index) {
+                      final badge = badges[index];
+                      return _BadgeListTile(badge: badge)
+                          .animate()
+                          .fadeIn(
+                            duration: 300.ms,
+                            delay: (50 * index).ms,
+                          )
+                          .slideX(
+                            begin: 0.05,
+                            duration: 300.ms,
+                            delay: (50 * index).ms,
+                          );
+                    },
+                  ),
                 );
               },
             ),

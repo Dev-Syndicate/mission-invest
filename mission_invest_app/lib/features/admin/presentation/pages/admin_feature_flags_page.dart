@@ -22,8 +22,21 @@ class AdminFeatureFlagsPage extends ConsumerWidget {
         ),
         data: (flags) {
           if (flags.isEmpty) {
-            return const Center(
-              child: Text('No feature flags configured.'),
+            return RefreshIndicator(
+              onRefresh: () async {
+                ref.invalidate(featureFlagsProvider);
+              },
+              child: LayoutBuilder(
+                builder: (context, constraints) => SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                    child: const Center(
+                      child: Text('No feature flags configured.'),
+                    ),
+                  ),
+                ),
+              ),
             );
           }
 
@@ -32,36 +45,42 @@ class AdminFeatureFlagsPage extends ConsumerWidget {
                 .toLowerCase()
                 .compareTo((b['name'] as String? ?? '').toLowerCase()));
 
-          return ListView.separated(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            itemCount: sorted.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 8),
-            itemBuilder: (context, index) {
-              final flag = sorted[index];
-              final id = flag['id'] as String;
-              final name = flag['name'] as String? ?? 'Unnamed';
-              final description = flag['description'] as String? ?? '';
-              final enabled = flag['enabled'] as bool? ?? false;
-
-              return Card(
-                child: SwitchListTile(
-                  secondary: Icon(
-                    Icons.circle,
-                    size: 12,
-                    color: enabled ? Colors.green : Colors.red,
-                  ),
-                  title: Text(name),
-                  subtitle: description.isNotEmpty ? Text(description) : null,
-                  value: enabled,
-                  onChanged: (newValue) => _toggleFlag(
-                    context,
-                    ref,
-                    id,
-                    newValue,
-                  ),
-                ),
-              );
+          return RefreshIndicator(
+            onRefresh: () async {
+              ref.invalidate(featureFlagsProvider);
             },
+            child: ListView.separated(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              itemCount: sorted.length,
+              separatorBuilder: (_, _) => const SizedBox(height: 8),
+              itemBuilder: (context, index) {
+                final flag = sorted[index];
+                final id = flag['id'] as String;
+                final name = flag['name'] as String? ?? 'Unnamed';
+                final description = flag['description'] as String? ?? '';
+                final enabled = flag['enabled'] as bool? ?? false;
+
+                return Card(
+                  child: SwitchListTile(
+                    secondary: Icon(
+                      Icons.circle,
+                      size: 12,
+                      color: enabled ? Colors.green : Colors.red,
+                    ),
+                    title: Text(name),
+                    subtitle: description.isNotEmpty ? Text(description) : null,
+                    value: enabled,
+                    onChanged: (newValue) => _toggleFlag(
+                      context,
+                      ref,
+                      id,
+                      newValue,
+                    ),
+                  ),
+                );
+              },
+            ),
           );
         },
       ),
