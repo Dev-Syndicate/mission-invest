@@ -70,6 +70,10 @@ This loop is the **retention engine**. Every feature must reinforce or protect t
 | Missed day | Nothing happens | Streak break alert + recovery mode |
 | Motivation | None | AI nudges, badges, themes, vision board |
 | Adaptation | Manual | AI auto-suggests timeline/amount adjustments |
+| Progress visualization | Number only | Journey map + morphing goal card |
+| Community | None | Cohorts, seasons, team missions |
+| Identity | None | Financial Confidence Score + story card |
+| UX modes | One size fits all | Win Mode vs Focus Mode |
 
 ---
 
@@ -212,7 +216,326 @@ Full ML model in v2 using historical user cohort data.
 
 ---
 
-### 5.7 Admin Dashboard (Web — Flutter Web or React)
+### 5.7 Mission Map UI
+
+**Description:** Replace the simple progress bar with an interactive journey map that divides the mission timeline into named phases with checkpoints and boss stages. Makes the dashboard feel like a game level.
+
+**Phase structure (auto-generated from mission duration):**
+
+| Phase | Days | Label | Visual state |
+|-------|------|-------|--------------|
+| Launch | 0–10 | "Ignition 🚀" | Rocket on launchpad |
+| Build | 11–30 | "Building Momentum 🔨" | Structure rising |
+| Momentum | 31–60 | "Locked In 🔥" | Full sprint animation |
+| Final Push | 61–end | "Endgame ⚡" | Goal glowing in view |
+
+**Checkpoints:** Triggered at 25%, 50%, 75% — each unlocks a micro-reward (badge, theme shard, XP).
+
+**Boss stages:** At each checkpoint, a short "challenge card" appears (e.g., "Can you double your contribution this week?"). Optional — no penalty for skipping.
+
+**Data fields added to `missions`:**
+```json
+"currentPhase": "build",
+"checkpointsUnlocked": [25, 50],
+"bossStagesCompleted": ["checkpoint_25"]
+```
+
+---
+
+### 5.8 Save-to-Visual Progress Morphing
+
+**Description:** The goal's vision card visually transforms as the user progresses toward the target. Progress becomes visible, not just numeric.
+
+**Morphing states (tied to % funded):**
+
+| Progress | Visual state |
+|----------|-------------|
+| 0–24% | Sketch / greyscale wireframe |
+| 25–49% | Partial colour fill |
+| 50–74% | Full colour, slightly blurred |
+| 75–99% | Sharp, vibrant, glowing border |
+| 100% | Full reveal + celebration overlay |
+
+**Implementation:** Flutter `ColorFiltered` + `ImageFiltered` widgets applied over the user-uploaded vision image. No extra image uploads required.
+
+**Fallback (no custom image):** Category-based illustrated cards (e.g., a phone sketch → polished phone for gadget goals; a passport stamp for trip goals) built as Lottie animations.
+
+**Data fields added to `missions`:**
+```json
+"morphStage": 2
+```
+
+---
+
+### 5.9 Adaptive Mission Planner
+
+**Description:** An engine that automatically recalculates the mission plan when the user deviates — either behind or ahead. Outputs actionable suggestions, not just warnings.
+
+**Trigger conditions:**
+- User is 2+ days behind schedule
+- User has deposited 15%+ more than the daily target (running ahead)
+- User manually taps "Recalculate"
+
+**Output examples:**
+
+Behind:
+> "You are 2 days behind. Option A: extend by 5 days. Option B: increase daily savings by ₹18."
+
+Ahead:
+> "You are 12% ahead of schedule. Early completion unlocked — projected finish in 38 days instead of 45."
+
+**Early completion reward:** Badge + animated "Speed Runner" certificate variant.
+
+**FastAPI endpoint:** `POST /ai/adapt` (already defined in 6.4 — extended with `aheadFlag` and `earlyCompletionDate` in response).
+
+**Data fields added to `missions`:**
+```json
+"adaptationHistory": [
+  { "date": "timestamp", "type": "extend", "newEndDate": "...", "reason": "2_days_behind" }
+]
+```
+
+---
+
+### 5.10 Goal Cohorts & Challenge Seasons
+
+**Description:** Platform-wide challenge seasons that users can opt into. Creates a community layer without requiring a social graph.
+
+**Season types:**
+- "30-Day Laptop Mission" — gadget category
+- "Summer Trip Challenge" — trip category
+- "Semester Fee Sprint" — education category
+- Custom admin-created seasons
+
+**Mechanics:**
+- Users join a season when creating or editing a mission (optional)
+- Cohort leaderboard shows anonymous rank (no names — privacy-safe)
+- Season badge awarded to all who complete before the season end date
+- Seasons have a fixed start/end date set by admin
+
+**Admin controls (extends 5.7):**
+- Create / archive seasons
+- Set category, banner image, target range, duration
+- View cohort completion rate in real time
+
+**New Firestore collection: `seasons/{seasonId}`**
+```json
+{
+  "title": "30-Day Laptop Mission",
+  "category": "gadget",
+  "startDate": "timestamp",
+  "endDate": "timestamp",
+  "participantCount": 1420,
+  "completionRate": 0.42,
+  "badgeId": "season_jan_laptop"
+}
+```
+
+**Data fields added to `missions`:**
+```json
+"seasonId": "season_jan_laptop | null"
+```
+
+---
+
+### 5.11 Social Proof (Privacy-Safe)
+
+**Description:** Optional social sharing and community features that add virality and retention without creating pressure or exposing private financial data.
+
+**Features:**
+- **Milestone cards:** Shareable PNG cards auto-generated at 25/50/75/100% milestones (goal name, progress %, streak — no rupee amounts unless user opts in)
+- **Anonymous leaderboard:** Cohort rank shown as "Top 12%" — no usernames or amounts visible
+- **Friend challenges:** Invite a friend to the same mission category; both get a "Duo Badge" if both complete
+- **Team missions:** Up to 5 users pool contributions toward a shared target (e.g., group trip fund)
+
+**Privacy rules:**
+- No financial amounts visible on leaderboard or shared cards by default
+- Friend challenges require explicit mutual opt-in
+- Team missions show each member's % contribution, not absolute amount
+
+**New Firestore collection: `teamMissions/{teamId}`**
+```json
+{
+  "title": "Goa Group Fund",
+  "targetAmount": 50000,
+  "memberIds": ["uid1", "uid2", "uid3"],
+  "contributions": { "uid1": 14000, "uid2": 18000, "uid3": 12000 },
+  "status": "active"
+}
+```
+
+---
+
+### 5.12 Financial Confidence Score
+
+**Description:** A discipline-based score that reflects savings behavior, not net worth. Better engagement metric than raw savings amount alone.
+
+**Score formula (0–1000):**
+```
+score = (streak_ratio * 300)
+      + (checkpoint_completion_rate * 250)
+      + (mission_completion_rate * 250)
+      + (recovery_success_rate * 100)
+      + (consistency_bonus * 100)   ← no missed days in last 7
+```
+
+**Score tiers:**
+
+| Range | Tier | Label |
+|-------|------|-------|
+| 0–199 | 1 | Beginner Saver |
+| 200–399 | 2 | Building Habits |
+| 400–599 | 3 | Consistent Saver |
+| 600–799 | 4 | Mission Pro |
+| 800–1000 | 5 | Financial Athlete |
+
+**Display:** Shown on profile screen as a circular dial with tier label and breakdown tooltip.
+
+**Data fields added to `users/{userId}`:**
+```json
+"confidenceScore": 720,
+"confidenceTier": 4,
+"scoreHistory": [{ "date": "timestamp", "score": 720 }]
+```
+
+---
+
+### 5.13 Reward Marketplace
+
+**Description:** Users earn XP points from streaks, milestones, and mission completions. XP can be redeemed in a marketplace for cosmetic items and profile upgrades.
+
+**XP earn rates:**
+| Action | XP |
+|--------|----|
+| Daily contribution | +10 |
+| Checkpoint reached | +50 |
+| Mission completed | +200 |
+| Streak milestone (7/30/60 days) | +75 / +150 / +300 |
+| Speed Runner (early finish) | +250 |
+| Season completion | +500 |
+
+**Marketplace items:**
+
+| Item type | Cost | Examples |
+|-----------|------|---------|
+| Profile badge | 100–500 XP | "Mission Veteran", "Speed Demon", "Iron Saver" |
+| App theme | 200–800 XP | Aurora, Midnight, Sakura, Neon Arcade |
+| Certificate style | 300 XP | Gold foil, Blueprint, Minimal, Retro |
+| Avatar frame | 150–400 XP | Flame ring, Streak crown, Goal star |
+| Profile effect | 500 XP | Confetti burst, Particle trail |
+
+**Rules:**
+- XP is non-transferable between users
+- Purchased items are permanent (no expiry)
+- New items added each season
+
+**New Firestore collection: `marketplace/{itemId}`**
+```json
+{
+  "name": "Neon Arcade Theme",
+  "type": "theme",
+  "cost": 600,
+  "rarity": "rare",
+  "previewUrl": "string"
+}
+```
+
+**Data fields added to `users/{userId}`:**
+```json
+"xpTotal": 1340,
+"xpSpent": 600,
+"ownedItems": ["theme_neon_arcade", "badge_mission_veteran"]
+```
+
+---
+
+### 5.14 "Why This Mission Matters" Story Card
+
+**Description:** Every mission has a short emotional story that connects money to identity and aspiration. Increases completion rate by anchoring the goal to personal meaning.
+
+**Story card fields (set at mission creation):**
+- **Headline:** One sentence — auto-suggested based on category, editable
+  - Example: "Save for a new laptop so you can build your portfolio faster."
+- **Personal note:** Optional free-text field (max 280 chars) — private, shown only to the user
+- **Motivation emoji:** Single emoji the user picks to represent the mission
+
+**Auto-suggested headlines by category:**
+| Category | Auto-suggestion |
+|----------|----------------|
+| Trip | "Travel is the only thing you buy that makes you richer." |
+| Gadget | "The right tool unlocks your best work." |
+| Vehicle | "Your own ride. Your own rules." |
+| Emergency fund | "Peace of mind is worth every rupee." |
+| Course | "Invest in yourself — the returns are limitless." |
+| Gift | "Make someone's day unforgettable." |
+
+**Display:** Story card shown at top of mission detail screen and on the mission completion certificate.
+
+**Data fields added to `missions`:**
+```json
+"storyHeadline": "Save for a new laptop so you can build your portfolio faster.",
+"personalNote": "I need this for my internship project.",
+"missionEmoji": "💻"
+```
+
+---
+
+### 5.15 Commit Contract Mode
+
+**Description:** An optional light commitment layer users can add to a mission for extra accountability — without being punitive.
+
+**Contract options (user picks one at mission creation or during active mission):**
+
+| Contract type | Commitment | Recovery condition |
+|---------------|-----------|-------------------|
+| Half-pledge | Save 50% of target in first half of duration | No penalty, just a checkpoint |
+| Consistency pact | No more than 2 misses in any 7-day window | Breach triggers a recovery task |
+| Speed pact | Complete 3 days before deadline | Bonus XP if met |
+
+**Recovery task (on contract breach):**
+- A micro-challenge is unlocked: "Log a ₹50 bonus contribution within 48 hours to restore the contract."
+- Completing the task restores "contract active" status
+- Max 1 recovery per contract
+
+**Visual indicator:** A contract seal icon on the mission card. Glows green when intact, amber when in recovery, grey if expired.
+
+**Data fields added to `missions`:**
+```json
+"contractType": "consistency_pact | half_pledge | speed_pact | none",
+"contractStatus": "active | in_recovery | breached | fulfilled | none",
+"contractRecoveryDeadline": "timestamp | null"
+```
+
+---
+
+### 5.16 Win Mode / Focus Mode
+
+**Description:** Two selectable display modes giving the app different personalities. Makes the product suitable for different user states and adds a premium UX story.
+
+**Win Mode (default):**
+- Celebratory animations on contributions (confetti, particle burst)
+- Energetic color palette (vivid gradients, bright accents)
+- Streak milestones trigger full-screen celebration overlays
+- Sound effects (optional, user toggle)
+- Animated progress rings and morphing cards
+
+**Focus Mode:**
+- Minimal UI: no animations, no particles
+- Muted palette (greyscale with a single accent color)
+- Data-forward layout: numbers and charts take priority over graphics
+- No sound
+- Ideal for users who find visual noise distracting
+
+**Toggle:** Available in Settings and as a quick-toggle in the app header. Persists per-user.
+
+**Data fields added to `users/{userId}`:**
+```json
+"displayMode": "win | focus"
+```
+
+---
+
+### 5.17 Admin Dashboard (Web — Flutter Web or React)
 
 **Analytics panels:**
 - Total users, DAU/WAU/MAU
@@ -334,6 +657,74 @@ Full ML model in v2 using historical user cohort data.
 }
 ```
 
+**Collection: `seasons/{seasonId}`**
+```json
+{
+  "title": "30-Day Laptop Mission",
+  "category": "gadget",
+  "startDate": "timestamp",
+  "endDate": "timestamp",
+  "participantCount": 1420,
+  "completionRate": 0.42,
+  "badgeId": "season_jan_laptop"
+}
+```
+
+**Collection: `teamMissions/{teamId}`**
+```json
+{
+  "title": "Goa Group Fund",
+  "targetAmount": 50000,
+  "memberIds": ["uid1", "uid2", "uid3"],
+  "contributions": { "uid1": 14000, "uid2": 18000, "uid3": 12000 },
+  "status": "active"
+}
+```
+
+**Collection: `marketplace/{itemId}`**
+```json
+{
+  "name": "Neon Arcade Theme",
+  "type": "theme",
+  "cost": 600,
+  "rarity": "rare",
+  "previewUrl": "string"
+}
+```
+
+**Extended: `users/{userId}`** (new fields)
+```json
+{
+  "confidenceScore": 720,
+  "confidenceTier": 4,
+  "scoreHistory": [{ "date": "timestamp", "score": 720 }],
+  "xpTotal": 1340,
+  "xpSpent": 600,
+  "ownedItems": ["theme_neon_arcade", "badge_mission_veteran"],
+  "displayMode": "win"
+}
+```
+
+**Extended: `missions/{missionId}`** (new fields)
+```json
+{
+  "currentPhase": "build",
+  "checkpointsUnlocked": [25, 50],
+  "bossStagesCompleted": ["checkpoint_25"],
+  "morphStage": 2,
+  "seasonId": "season_jan_laptop",
+  "storyHeadline": "Save for a new laptop so you can build your portfolio faster.",
+  "personalNote": "I need this for my internship project.",
+  "missionEmoji": "💻",
+  "contractType": "consistency_pact",
+  "contractStatus": "active",
+  "contractRecoveryDeadline": null,
+  "adaptationHistory": [
+    { "date": "timestamp", "type": "extend", "newEndDate": "...", "reason": "2_days_behind" }
+  ]
+}
+```
+
 ---
 
 ### 6.4 FastAPI AI Service Endpoints
@@ -342,12 +733,6 @@ Full ML model in v2 using historical user cohort data.
 ```json
 Request:  { "userId": "...", "missionId": "...", "trigger": "missed_day" }
 Response: { "message": "...", "actionSuggestion": "extend_7_days" }
-```
-
-**POST /ai/adapt**
-```json
-Request:  { "missionId": "...", "currentSaved": 3200, "daysLeft": 20, "target": 10000 }
-Response: { "suggestion": "reduce_daily", "newDailyAmount": 172, "newEndDate": "..." }
 ```
 
 **POST /ai/predict**
@@ -360,6 +745,24 @@ Response: { "completionProbability": 0.74, "riskLevel": "medium" }
 ```json
 Request:  { "goalName": "Goa Trip", "amountLeft": 1200, "daysLeft": 6, "streak": 12 }
 Response: { "message": "You're ₹1,200 away from Goa 🏖️. 6 days. Don't quit now." }
+```
+
+**POST /ai/adapt** (extended)
+```json
+Request:  { "missionId": "...", "currentSaved": 3200, "daysLeft": 20, "target": 10000, "aheadFlag": false }
+Response: { "suggestion": "reduce_daily", "newDailyAmount": 172, "newEndDate": "...", "earlyCompletionDate": null }
+```
+
+**POST /ai/confidence**
+```json
+Request:  { "userId": "...", "streakRatio": 0.85, "checkpointRate": 1.0, "completionRate": 0.6, "recoveryRate": 1.0, "consistencyBonus": true }
+Response: { "score": 720, "tier": 4, "label": "Mission Pro", "breakdown": { ... } }
+```
+
+**POST /ai/story-suggest**
+```json
+Request:  { "category": "gadget", "goalName": "New Laptop" }
+Response: { "headline": "The right tool unlocks your best work.", "emoji": "💻" }
 ```
 
 ---
@@ -389,9 +792,16 @@ Response: { "message": "You're ₹1,200 away from Goa 🏖️. 6 days. Don't qui
 ### Post-MVP (v2 roadmap)
 - Full LLM integration for AI nudges
 - UPI/bank auto-save integration
-- Social leaderboards
-- Platform-wide challenges
+- Social leaderboards + friend challenges
+- Platform-wide challenge seasons
 - ML completion probability model
+- Team missions
+- Reward Marketplace (XP economy)
+- Financial Confidence Score
+- Win Mode / Focus Mode toggle
+- Commit Contract Mode
+- Save-to-Visual Progress Morphing (Lottie variants)
+- Mission Map UI (journey phases + boss stages)
 
 ---
 
@@ -443,28 +853,48 @@ lib/
 │   ├── missions/
 │   │   ├── mission_create_screen.dart
 │   │   ├── mission_detail_screen.dart
-│   │   └── mission_list_screen.dart
+│   │   ├── mission_list_screen.dart
+│   │   └── mission_map_screen.dart        ← Mission Map UI (5.7)
 │   ├── contributions/
 │   ├── rewards/
 │   │   ├── badges_screen.dart
-│   │   └── certificate_screen.dart
+│   │   ├── certificate_screen.dart
+│   │   └── marketplace_screen.dart        ← Reward Marketplace (5.13)
+│   ├── social/
+│   │   ├── leaderboard_screen.dart        ← Social Proof (5.11)
+│   │   ├── team_mission_screen.dart
+│   │   └── share_card_widget.dart
+│   ├── seasons/
+│   │   └── season_list_screen.dart        ← Challenge Seasons (5.10)
+│   ├── profile/
+│   │   └── confidence_score_screen.dart   ← Financial Confidence Score (5.12)
 │   ├── notifications/
 │   └── admin/
 ├── services/
 │   ├── firestore_service.dart
-│   ├── ai_service.dart          ← calls FastAPI
+│   ├── ai_service.dart                    ← calls FastAPI (nudge, adapt, predict, confidence, story)
 │   ├── notification_service.dart
-│   └── auth_service.dart
+│   ├── auth_service.dart
+│   ├── xp_service.dart                    ← XP earn/spend logic (5.13)
+│   └── adaptive_planner_service.dart      ← Adaptive Mission Planner (5.9)
 ├── models/
 │   ├── mission.dart
 │   ├── contribution.dart
-│   └── badge.dart
+│   ├── badge.dart
+│   ├── season.dart
+│   ├── team_mission.dart
+│   └── marketplace_item.dart
 └── widgets/
     ├── progress_ring.dart
     ├── streak_counter.dart
-    └── mission_card.dart
+    ├── mission_card.dart
+    ├── mission_map_widget.dart             ← journey phases + checkpoints (5.7)
+    ├── morphing_goal_card.dart             ← visual progress morphing (5.8)
+    ├── story_card_widget.dart              ← Why This Mission Matters (5.14)
+    ├── contract_seal_widget.dart           ← Commit Contract Mode (5.15)
+    └── display_mode_toggle.dart            ← Win / Focus Mode (5.16)
 ```
 
 ---
 
-*PRD Version: 1.0 | Status: Draft | Last Updated: April 2026*
+*PRD Version: 2.0 | Status: Draft | Last Updated: April 2026*
