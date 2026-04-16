@@ -121,7 +121,7 @@ class ProfilePage extends ConsumerWidget {
                   leading: const Icon(Icons.admin_panel_settings),
                   title: const Text('Admin Panel'),
                   trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.go('/admin'),
+                  onTap: () => context.push('/admin'),
                 ),
 
               // Navigation items

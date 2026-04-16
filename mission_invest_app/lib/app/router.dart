@@ -6,6 +6,7 @@ import '../features/auth/presentation/pages/login_page.dart';
 import '../features/auth/presentation/pages/register_page.dart';
 import '../features/auth/presentation/pages/forgot_password_page.dart';
 import '../features/auth/presentation/providers/auth_provider.dart';
+import '../features/home/presentation/providers/home_provider.dart';
 import '../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../features/home/presentation/pages/home_page.dart';
 import '../features/missions/presentation/pages/mission_list_page.dart';
@@ -39,11 +40,13 @@ final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateChangesProvider);
+  final userProfile = ref.watch(currentUserProfileProvider);
+  final isAdmin = userProfile.valueOrNull?.isAdmin ?? false;
 
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: '/',
-    refreshListenable: _RouterRefreshNotifier(ref, authStateChangesProvider),
+    refreshListenable: _RouterRefreshNotifier(ref, authStateChangesProvider, currentUserProfileProvider),
     redirect: (context, state) {
       final isLoading = authState.isLoading;
       final user = authState.valueOrNull;
@@ -58,14 +61,30 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // Not authenticated → send to login (unless already on an auth page).
       if (!isLoggedIn && !isAuthRoute) return '/auth/login';
 
-      // Authenticated but on an auth page → send to home.
-      if (isLoggedIn && isAuthRoute) return '/';
+      // Authenticated but on an auth page → send to appropriate home.
+      if (isLoggedIn && isAuthRoute) {
+        return isAdmin ? '/admin' : '/';
+      }
 
       // Authenticated user without a display name likely hasn't onboarded.
       if (isLoggedIn &&
           !isOnboarding &&
+          !isAdmin &&
           (user.displayName == null || user.displayName!.isEmpty)) {
         return '/onboarding';
+      }
+
+      // Admin users should not access normal user routes.
+      if (isLoggedIn && isAdmin) {
+        final isUserRoute = location == '/' ||
+            location.startsWith('/missions') ||
+            location.startsWith('/rewards');
+        if (isUserRoute) return '/admin';
+      }
+
+      // Normal users should not access admin routes.
+      if (isLoggedIn && !isAdmin && location.startsWith('/admin')) {
+        return '/';
       }
 
       return null;
@@ -117,6 +136,21 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: '/profile',
             name: 'profile',
             builder: (_, __) => const ProfilePage(),
+          ),
+          GoRoute(
+            path: '/admin',
+            name: 'adminDashboard',
+            builder: (_, __) => const AdminDashboardPage(),
+          ),
+          GoRoute(
+            path: '/admin/users',
+            name: 'adminUsers',
+            builder: (_, __) => const AdminUsersPage(),
+          ),
+          GoRoute(
+            path: '/admin/analytics',
+            name: 'adminAnalytics',
+            builder: (_, __) => const AdminAnalyticsPage(),
           ),
         ],
       ),
@@ -225,49 +259,36 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, __) => const NotificationSettingsPage(),
       ),
 
-      // Admin routes
+      // Admin sub-routes (full-screen, no bottom nav)
       GoRoute(
-        path: '/admin',
-        name: 'adminDashboard',
+        path: '/admin/templates',
+        name: 'adminTemplates',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (_, __) => const AdminDashboardPage(),
-        routes: [
-          GoRoute(
-            path: 'users',
-            name: 'adminUsers',
-            builder: (_, __) => const AdminUsersPage(),
-          ),
-          GoRoute(
-            path: 'analytics',
-            name: 'adminAnalytics',
-            builder: (_, __) => const AdminAnalyticsPage(),
-          ),
-          GoRoute(
-            path: 'templates',
-            name: 'adminTemplates',
-            builder: (_, __) => const AdminTemplatesPage(),
-          ),
-          GoRoute(
-            path: 'challenges',
-            name: 'adminChallenges',
-            builder: (_, __) => const AdminChallengesPage(),
-          ),
-          GoRoute(
-            path: 'notifications',
-            name: 'adminNotifications',
-            builder: (_, __) => const AdminNotificationsPage(),
-          ),
-          GoRoute(
-            path: 'feature-flags',
-            name: 'adminFeatureFlags',
-            builder: (_, __) => const AdminFeatureFlagsPage(),
-          ),
-          GoRoute(
-            path: 'ai-review',
-            name: 'adminAiReview',
-            builder: (_, __) => const AdminAiReviewPage(),
-          ),
-        ],
+        builder: (_, __) => const AdminTemplatesPage(),
+      ),
+      GoRoute(
+        path: '/admin/challenges',
+        name: 'adminChallenges',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (_, __) => const AdminChallengesPage(),
+      ),
+      GoRoute(
+        path: '/admin/notifications',
+        name: 'adminNotifications',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (_, __) => const AdminNotificationsPage(),
+      ),
+      GoRoute(
+        path: '/admin/feature-flags',
+        name: 'adminFeatureFlags',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (_, __) => const AdminFeatureFlagsPage(),
+      ),
+      GoRoute(
+        path: '/admin/ai-review',
+        name: 'adminAiReview',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (_, __) => const AdminAiReviewPage(),
       ),
     ],
   );
@@ -276,17 +297,26 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 /// A [ChangeNotifier] that triggers GoRouter refreshes whenever the watched
 /// Riverpod provider emits a new value.
 class _RouterRefreshNotifier extends ChangeNotifier {
-  _RouterRefreshNotifier(Ref ref, StreamProvider<dynamic> provider) {
-    _subscription = ref.listen(provider, (_, __) {
+  _RouterRefreshNotifier(
+    Ref ref,
+    StreamProvider<dynamic> authProvider,
+    StreamProvider<dynamic> profileProvider,
+  ) {
+    _authSub = ref.listen(authProvider, (_, __) {
+      notifyListeners();
+    });
+    _profileSub = ref.listen(profileProvider, (_, __) {
       notifyListeners();
     });
   }
 
-  late final ProviderSubscription<AsyncValue<dynamic>> _subscription;
+  late final ProviderSubscription<AsyncValue<dynamic>> _authSub;
+  late final ProviderSubscription<AsyncValue<dynamic>> _profileSub;
 
   @override
   void dispose() {
-    _subscription.close();
+    _authSub.close();
+    _profileSub.close();
     super.dispose();
   }
 }
