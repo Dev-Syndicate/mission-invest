@@ -48,6 +48,27 @@ def generate_adaptation(req: AdaptRequest) -> AdaptResponse:
             ),
         )
 
+    # Ahead-of-schedule detection (PRD 5.9)
+    if req.ahead_flag or actual_daily_needed < req.daily_target * 0.85:
+        # User is saving faster than planned
+        if remaining > 0 and req.current_saved > 0:
+            # Calculate projected days to finish at current pace
+            days_elapsed = req.total_days - req.days_left if hasattr(req, 'total_days') else max(1, int(req.current_saved / req.daily_target))
+            actual_daily_rate = req.current_saved / max(days_elapsed, 1)
+            projected_days_left = int(remaining / actual_daily_rate) + 1
+            early_date = (datetime.now() + timedelta(days=projected_days_left)).date().isoformat()
+
+            return AdaptResponse(
+                suggestion="ahead_of_schedule",
+                new_daily_amount=round(actual_daily_needed, 0),
+                early_completion_date=early_date,
+                reasoning=(
+                    f"Great pace! You're ahead of schedule. "
+                    f"At your current rate, you could finish in {projected_days_left} days "
+                    f"instead of {req.days_left}."
+                ),
+            )
+
     return AdaptResponse(
         suggestion="on_track",
         reasoning=(

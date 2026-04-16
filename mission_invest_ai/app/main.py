@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
-from .routers import health, nudge, adapt, predict, message
+from .routers import health, nudge, adapt, predict, message, confidence, story
 from .middleware.auth import AuthMiddleware
 
 
@@ -42,3 +42,5 @@ app.include_router(nudge.router, prefix="/ai", tags=["AI"])
 app.include_router(adapt.router, prefix="/ai", tags=["AI"])
 app.include_router(predict.router, prefix="/ai", tags=["AI"])
 app.include_router(message.router, prefix="/ai", tags=["AI"])
+app.include_router(confidence.router, prefix="/ai", tags=["AI"])
+app.include_router(story.router, prefix="/ai", tags=["AI"])
