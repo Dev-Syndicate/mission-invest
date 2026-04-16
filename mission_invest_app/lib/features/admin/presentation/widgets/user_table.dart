@@ -18,7 +18,7 @@ class UserTable extends StatelessWidget {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
       itemCount: users.length,
       itemBuilder: (context, index) => _UserCard(user: users[index]),
     );

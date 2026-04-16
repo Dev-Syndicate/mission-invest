@@ -29,7 +29,9 @@ class MissionListPage extends ConsumerWidget {
                 builder: (context, constraints) => SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   child: ConstrainedBox(
-                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight,
+                    ),
                     child: Center(
                       child: EmptyState(
                         icon: Icons.flag_outlined,
@@ -52,7 +54,7 @@ class MissionListPage extends ConsumerWidget {
             },
             child: ListView.builder(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
               itemCount: missions.length,
               itemBuilder: (context, index) {
                 final mission = missions[index];
@@ -62,13 +64,11 @@ class MissionListPage extends ConsumerWidget {
                   margin: const EdgeInsets.only(bottom: 12),
                   child: ListTile(
                     leading: CircleAvatar(
-                      backgroundColor: Theme.of(context)
-                          .colorScheme
-                          .primary
-                          .withAlpha(30),
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.primary.withAlpha(30),
                       child: Text(
-                        mission.missionEmoji ??
-                            categoryEmoji(mission.category),
+                        mission.missionEmoji ?? categoryEmoji(mission.category),
                         style: const TextStyle(fontSize: 20),
                       ),
                     ),
@@ -94,10 +94,10 @@ class MissionListPage extends ConsumerWidget {
                       ],
                     ),
                     trailing: _StatusChip(status: mission.status),
-                    onTap: () =>
-                        context.pushNamed('missionDetail', pathParameters: {
-                      'missionId': mission.id,
-                    }),
+                    onTap: () => context.pushNamed(
+                      'missionDetail',
+                      pathParameters: {'missionId': mission.id},
+                    ),
                   ),
                 );
               },
@@ -105,9 +105,12 @@ class MissionListPage extends ConsumerWidget {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => context.pushNamed('missionCreate'),
-        child: const Icon(Icons.add),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 86.0), // adjust as needed
+        child: FloatingActionButton(
+          onPressed: () => context.pushNamed('missionCreate'),
+          child: const Icon(Icons.add),
+        ),
       ),
     );
   }

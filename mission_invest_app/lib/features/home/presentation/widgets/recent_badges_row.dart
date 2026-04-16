@@ -12,6 +12,7 @@ class RecentBadgesRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final badgesAsync = ref.watch(homeRecentBadgesProvider);
+    final theme = Theme.of(context);
 
     return badgesAsync.when(
       loading: () => const SizedBox.shrink(),
@@ -19,7 +20,6 @@ class RecentBadgesRow extends ConsumerWidget {
       data: (badges) {
         if (badges.isEmpty) return const SizedBox.shrink();
 
-        // Show at most 10 most recent badges
         final recent = badges.take(10).toList();
 
         return Column(
@@ -28,9 +28,9 @@ class RecentBadgesRow extends ConsumerWidget {
             const SizedBox(height: 24),
             Text(
               'Recent Badges',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 12),
             SizedBox(
@@ -60,17 +60,26 @@ class _BadgeChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dateStr = DateFormat.MMMd().format(badge.earnedAt);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Container(
       width: 100,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: AppColors.badgeGold.withAlpha(76),
+          color: AppColors.badgeGold.withAlpha(isDark ? 50 : 80),
           width: 1.5,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.badgeGold.withAlpha(isDark ? 15 : 10),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -82,20 +91,17 @@ class _BadgeChip extends StatelessWidget {
             textAlign: TextAlign.center,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+            style: theme.textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
           ),
           const SizedBox(height: 2),
           Text(
             dateStr,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withAlpha(128),
-                  fontSize: 10,
-                ),
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurface.withAlpha(100),
+              fontSize: 10,
+            ),
           ),
         ],
       ),

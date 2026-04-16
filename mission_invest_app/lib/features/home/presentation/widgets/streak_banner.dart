@@ -11,66 +11,95 @@ class StreakBanner extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final userProfile = ref.watch(currentUserProfileProvider);
     final globalStreak = userProfile.valueOrNull?.currentGlobalStreak ?? 0;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
           colors: globalStreak > 0
-              ? [AppColors.streakFire, AppColors.warning]
+              ? [AppColors.streakFire, const Color(0xFFFF9800)]
               : [
-                  Theme.of(context).colorScheme.primary,
-                  Theme.of(context).colorScheme.secondary,
+                  theme.colorScheme.primary,
+                  theme.colorScheme.primary.withAlpha(180),
                 ],
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: (globalStreak > 0
+                    ? AppColors.streakFire
+                    : theme.colorScheme.primary)
+                .withAlpha(isDark ? 60 : 40),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(
-                Icons.local_fire_department,
-                color: Colors.white,
-                size: globalStreak > 0 ? 32 : 28,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '$globalStreak Day Streak',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withAlpha(30),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-              ),
-              if (globalStreak >= 7) ...[
-                const SizedBox(width: 8),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withAlpha(51),
-                    borderRadius: BorderRadius.circular(12),
+                    child: Icon(
+                      Icons.local_fire_department,
+                      color: Colors.white,
+                      size: globalStreak > 0 ? 28 : 24,
+                    ),
                   ),
-                  child: Text(
-                    _streakLabel(globalStreak),
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '$globalStreak Day Streak',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          _motivationText(globalStreak),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: Colors.white.withAlpha(200),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (globalStreak >= 7)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withAlpha(30),
+                        borderRadius: BorderRadius.circular(20),
+                        border:
+                            Border.all(color: Colors.white.withAlpha(40)),
+                      ),
+                      child: Text(
+                        _streakLabel(globalStreak),
+                        style: theme.textTheme.labelSmall?.copyWith(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
+                          letterSpacing: 1,
                         ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            _motivationText(globalStreak),
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.white.withAlpha(204),
-                ),
-          ),
+                      ),
+                    ),
+                ],
+              ),
         ],
       ),
     );

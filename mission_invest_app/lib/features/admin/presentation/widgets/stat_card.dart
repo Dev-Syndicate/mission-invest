@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../shared/widgets/dashboard_card.dart';
 
 class StatCard extends StatelessWidget {
   final String title;
@@ -16,20 +17,14 @@ class StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: color ?? Theme.of(context).colorScheme.primary),
-            const SizedBox(height: 12),
-            Text(value, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 4),
-            Text(title, style: Theme.of(context).textTheme.bodySmall),
-          ],
-        ),
-      ),
+    final theme = Theme.of(context);
+    final iconColor = color ?? theme.colorScheme.primary;
+
+    return KpiCard(
+      title: title,
+      value: value,
+      icon: icon,
+      color: iconColor,
     );
   }
 }

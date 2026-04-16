@@ -1,5 +1,5 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -7,6 +7,7 @@ import '../../../missions/data/models/mission_model.dart';
 import '../../../../shared/widgets/app_loading.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../providers/home_provider.dart';
+import '../widgets/balance_hero_card.dart';
 import '../widgets/mission_card.dart';
 import '../widgets/streak_banner.dart';
 import '../widgets/recent_badges_row.dart';
@@ -19,9 +20,10 @@ class HomePage extends ConsumerWidget {
     final greeting = ref.watch(homeGreetingProvider);
     final userProfile = ref.watch(currentUserProfileProvider);
     final missionsAsync = ref.watch(homeActiveMissionsProvider);
+    final theme = Theme.of(context);
 
-    final displayName =
-        userProfile.valueOrNull?.displayName ?? '';
+    final displayName = userProfile.valueOrNull?.displayName ?? '';
+    final totalSaved = userProfile.valueOrNull?.totalSaved ?? 0.0;
 
     return Scaffold(
       appBar: AppBar(
@@ -30,38 +32,60 @@ class HomePage extends ConsumerWidget {
           children: [
             Text(
               greeting,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withAlpha(153),
-                  ),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withAlpha(120),
+                fontWeight: FontWeight.w500,
+              ),
             ),
             if (displayName.isNotEmpty)
               Text(
                 displayName,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
           ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications_outlined),
+            icon: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.notifications_outlined,
+                size: 20,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
             onPressed: () => context.pushNamed('notificationSettings'),
           ),
+          const SizedBox(width: 4),
         ],
       ),
       body: missionsAsync.when(
         loading: () => const Center(child: AppLoading()),
         error: (error, _) {
-          // Transient errors (e.g. permission settling) — show loading briefly
-          // instead of flashing an error screen.
           debugPrint('Home missions error: $error');
           return const Center(child: AppLoading());
         },
         data: (missions) {
+          // Compute sparkline data from missions saved amounts
+          final recentAmounts = missions
+              .map((m) => m.savedAmount)
+              .toList();
+          if (recentAmounts.isEmpty) recentAmounts.addAll([0, 0]);
+          if (recentAmounts.length == 1) recentAmounts.insert(0, 0);
+
+          // Compute weekly growth approximation
+          final totalTarget = missions.fold<double>(
+              0, (sum, m) => sum + m.targetAmount);
+          final weeklyGrowth = totalTarget > 0
+              ? (totalSaved / totalTarget) * 100
+              : 0.0;
+
           if (missions.isEmpty) {
             return RefreshIndicator(
               onRefresh: () async {
@@ -71,6 +95,16 @@ class HomePage extends ConsumerWidget {
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.all(16),
                 children: [
+                  BalanceHeroCard(
+                    totalSaved: totalSaved,
+                    weeklyGrowth: weeklyGrowth,
+                    recentAmounts: recentAmounts,
+                  ).animate().fadeIn(duration: 500.ms).slideY(
+                        begin: 0.05,
+                        duration: 500.ms,
+                        curve: Curves.easeOutCubic,
+                      ),
+                  const SizedBox(height: 20),
                   const StreakBanner(),
                   const SizedBox(height: 32),
                   EmptyState(
@@ -82,6 +116,7 @@ class HomePage extends ConsumerWidget {
                     onAction: () => context.pushNamed('missionCreate'),
                   ),
                   const RecentBadgesRow(),
+                  const SizedBox(height: 100),
                 ],
               ),
             );
@@ -95,7 +130,22 @@ class HomePage extends ConsumerWidget {
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.all(16),
               children: [
-                const StreakBanner(),
+                // Hero balance card
+                BalanceHeroCard(
+                  totalSaved: totalSaved,
+                  weeklyGrowth: weeklyGrowth,
+                  recentAmounts: recentAmounts,
+                ).animate().fadeIn(duration: 500.ms).slideY(
+                      begin: 0.05,
+                      duration: 500.ms,
+                      curve: Curves.easeOutCubic,
+                    ),
+                const SizedBox(height: 20),
+
+                // Streak banner
+                const StreakBanner()
+                    .animate()
+                    .fadeIn(duration: 500.ms, delay: 100.ms),
                 const SizedBox(height: 24),
 
                 // Active Missions header
@@ -104,34 +154,45 @@ class HomePage extends ConsumerWidget {
                   children: [
                     Text(
                       'Active Missions',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                    TextButton.icon(
-                      onPressed: () => context.pushNamed('missionCreate'),
-                      icon: const Icon(Icons.add, size: 18),
-                      label: const Text('New'),
+                    _AddButton(
+                      onTap: () => context.pushNamed('missionCreate'),
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
 
-                // Mission cards
-                ...missions.map((mission) => Padding(
+                // Mission cards with staggered animation
+                ...missions.asMap().entries.map((entry) => Padding(
                       padding: const EdgeInsets.only(bottom: 12),
                       child: MissionCard(
-                        missionId: mission.id,
-                        title: mission.title,
-                        categoryEmoji: categoryEmoji(mission.category),
-                        progress: mission.progressPercentage,
-                        streak: mission.currentStreak,
-                        daysLeft: mission.daysRemaining,
-                        savedAmount: mission.savedAmount,
-                        targetAmount: mission.targetAmount,
-                        dailyTarget: mission.dailyTarget,
-                        onTap: () => context.push('/missions/${mission.id}'),
-                      ),
+                        missionId: entry.value.id,
+                        title: entry.value.title,
+                        categoryEmoji:
+                            categoryEmoji(entry.value.category),
+                        progress: entry.value.progressPercentage,
+                        streak: entry.value.currentStreak,
+                        daysLeft: entry.value.daysRemaining,
+                        savedAmount: entry.value.savedAmount,
+                        targetAmount: entry.value.targetAmount,
+                        dailyTarget: entry.value.dailyTarget,
+                        onTap: () =>
+                            context.push('/missions/${entry.value.id}'),
+                      )
+                          .animate()
+                          .fadeIn(
+                            duration: 400.ms,
+                            delay: (150 + entry.key * 80).ms,
+                          )
+                          .slideY(
+                            begin: 0.05,
+                            duration: 400.ms,
+                            delay: (150 + entry.key * 80).ms,
+                            curve: Curves.easeOutCubic,
+                          ),
                     )),
 
                 // Seasons & Teams entry points
@@ -154,16 +215,55 @@ class HomePage extends ConsumerWidget {
                       ),
                     ),
                   ],
-                ),
+                )
+                    .animate()
+                    .fadeIn(duration: 400.ms, delay: 300.ms),
                 const SizedBox(height: 16),
 
                 // Recent badges
                 const RecentBadgesRow(),
-                const SizedBox(height: 16),
+                const SizedBox(height: 100),
               ],
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+class _AddButton extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _AddButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.primary.withAlpha(20),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.add_rounded,
+                size: 16, color: theme.colorScheme.primary),
+            const SizedBox(width: 4),
+            Text(
+              'New',
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -183,28 +283,38 @@ class _HomeEntryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 20, color: theme.colorScheme.primary),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: theme.textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: theme.colorScheme.onSurface.withAlpha(isDark ? 10 : 15),
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(isDark ? 20 : 8),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 20, color: theme.colorScheme.primary),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: theme.textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
       ),
     );
