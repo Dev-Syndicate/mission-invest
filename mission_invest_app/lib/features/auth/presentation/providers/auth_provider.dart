@@ -103,7 +103,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> signInWithGoogle() async {
     state = const AuthState(isLoading: true);
     try {
-      final googleUser = await GoogleSignIn().signIn();
+      final googleUser = await GoogleSignIn(
+        serverClientId:
+            '779968530362-tk2h9cjck36hbnnm12fgmaienjfdgjq4.apps.googleusercontent.com',
+      ).signIn();
       if (googleUser == null) {
         state = const AuthState();
         return;

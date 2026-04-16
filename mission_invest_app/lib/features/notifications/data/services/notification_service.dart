@@ -44,9 +44,9 @@ class NotificationService {
 
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosInit = DarwinInitializationSettings(
-      requestAlertPermission: false,
-      requestBadgePermission: false,
-      requestSoundPermission: false,
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
     );
     const initSettings = InitializationSettings(
       android: androidInit,
@@ -59,6 +59,8 @@ class NotificationService {
         _localNotifications.resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>();
     if (androidPlugin != null) {
+      // Request POST_NOTIFICATIONS permission on Android 13+
+      await androidPlugin.requestNotificationsPermission();
       await androidPlugin.createNotificationChannel(_reminderChannel);
       await androidPlugin.createNotificationChannel(_alertChannel);
       await androidPlugin.createNotificationChannel(_milestoneChannel);

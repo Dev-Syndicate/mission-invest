@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "779968530362-h50i6hq071s5qaaath4l4jkuf81hqb17.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.mission_invest_app",
+            "certificate_hash": "c03407b1c60a32f1779bbb851c0c79a7c430f854"
+          }
+        },
+        {
           "client_id": "779968530362-tk2h9cjck36hbnnm12fgmaienjfdgjq4.apps.googleusercontent.com",
           "client_type": 3
         }

@@ -74,6 +74,6 @@ function getChannelId(type: string): string {
     case 'daily_reminder':
       return 'mission_invest_reminders';
     default:
-      return 'mission_invest_general';
+      return 'mission_invest_reminders';
   }
 }
