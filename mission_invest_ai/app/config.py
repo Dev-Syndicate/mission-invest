@@ -5,8 +5,6 @@ from typing import List
 class Settings(BaseSettings):
     firebase_project_id: str = "mission-invest-dev"
     firebase_credentials_path: str = "./service-account.json"
-    anthropic_api_key: str = ""
-    openai_api_key: str = ""
     gemini_api_key: str = ""
     llm_provider: str = "gemini"
     llm_model: str = "gemini-3.0-flash"
