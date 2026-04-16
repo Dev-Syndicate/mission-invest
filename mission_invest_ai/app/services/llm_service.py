@@ -19,6 +19,8 @@ async def generate_message(prompt: str) -> str:
             return await _call_anthropic(prompt)
         elif settings.llm_provider == "openai" and settings.openai_api_key:
             return await _call_openai(prompt)
+        elif settings.llm_provider == "gemini" and settings.gemini_api_key:
+            return await _call_gemini(prompt)
         else:
             logger.warn("No LLM API key configured, using fallback template")
             return _FALLBACK_TEMPLATES[0]
@@ -48,6 +50,20 @@ async def _call_openai(prompt: str) -> str:
     llm = ChatOpenAI(
         model="gpt-4o-mini",
         api_key=settings.openai_api_key,
+        max_tokens=200,
+        temperature=0.8,
+    )
+    response = await llm.ainvoke(prompt)
+    return response.content
+
+
+async def _call_gemini(prompt: str) -> str:
+    """Call Google Gemini API via LangChain."""
+    from langchain_google_genai import ChatGoogleGenAI
+
+    llm = ChatGoogleGenAI(
+        model=settings.llm_model,
+        google_api_key=settings.gemini_api_key,
         max_tokens=200,
         temperature=0.8,
     )

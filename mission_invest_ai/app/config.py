@@ -7,8 +7,9 @@ class Settings(BaseSettings):
     firebase_credentials_path: str = "./service-account.json"
     anthropic_api_key: str = ""
     openai_api_key: str = ""
-    llm_provider: str = "anthropic"
-    llm_model: str = "claude-sonnet-4-20250514"
+    gemini_api_key: str = ""
+    llm_provider: str = "gemini"
+    llm_model: str = "gemini-3.0-flash"
     cors_origins: List[str] = ["http://localhost:3000", "http://localhost:8080"]
     log_level: str = "info"
     port: int = 8000
