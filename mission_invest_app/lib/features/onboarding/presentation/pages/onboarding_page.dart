@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../shared/widgets/app_button.dart';
+import '../providers/onboarding_provider.dart';
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
@@ -84,9 +85,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     label: _currentPage == _pages.length - 1
                         ? 'Get Started'
                         : 'Next',
-                    onPressed: () {
+                    onPressed: () async {
                       if (_currentPage == _pages.length - 1) {
-                        context.go('/auth/login');
+                        await completeOnboarding();
+                        if (mounted) context.go('/auth/login');
                       } else {
                         _pageController.nextPage(
                           duration: const Duration(milliseconds: 300),
@@ -98,7 +100,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   if (_currentPage < _pages.length - 1) ...[
                     const SizedBox(height: 8),
                     TextButton(
-                      onPressed: () => context.go('/auth/login'),
+                      onPressed: () async {
+                        await completeOnboarding();
+                        if (mounted) context.go('/auth/login');
+                      },
                       child: const Text('Skip'),
                     ),
                   ],

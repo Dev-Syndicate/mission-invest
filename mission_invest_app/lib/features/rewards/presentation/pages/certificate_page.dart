@@ -1,58 +1,117 @@
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:screenshot/screenshot.dart';
+import 'package:share_plus/share_plus.dart';
 
-class CertificatePage extends ConsumerWidget {
+import '../../../../shared/widgets/app_loading.dart';
+import '../../../../shared/widgets/app_error_widget.dart';
+import '../../../missions/data/repositories/mission_repository.dart';
+import '../widgets/certificate_widget.dart';
+
+class CertificatePage extends ConsumerStatefulWidget {
   final String missionId;
 
   const CertificatePage({super.key, required this.missionId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // TODO: Generate certificate from mission data
+  ConsumerState<CertificatePage> createState() => _CertificatePageState();
+}
+
+class _CertificatePageState extends ConsumerState<CertificatePage> {
+  final _screenshotController = ScreenshotController();
+  bool _isSharing = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final missionAsync = ref.watch(watchMissionProvider(widget.missionId));
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Certificate'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.share),
-            onPressed: () {
-              // TODO: Screenshot and share certificate
-            },
+            icon: _isSharing
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.share),
+            onPressed: _isSharing ? null : () => _shareCertificate(context),
           ),
         ],
       ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Card(
-            child: Padding(
-              padding: const EdgeInsets.all(32),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.emoji_events, size: 64, color: Colors.amber),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Mission Complete!',
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text('Congratulations on completing your mission!'),
-                  const SizedBox(height: 24),
-                  const Divider(),
-                  const SizedBox(height: 16),
-                  const Text('Mission: [Title]'),
-                  const Text('Amount Saved: \u20B9[Amount]'),
-                  const Text('Days Taken: [Days]'),
-                  const Text('Completed: [Date]'),
-                ],
+      body: missionAsync.when(
+        loading: () => const Center(child: AppLoading()),
+        error: (error, _) => AppErrorWidget(
+          message: 'Failed to load mission: $error',
+          onRetry: () =>
+              ref.invalidate(watchMissionProvider(widget.missionId)),
+        ),
+        data: (mission) {
+          if (mission == null) {
+            return const Center(child: Text('Mission not found'));
+          }
+
+          final completionDate = mission.completedAt ?? DateTime.now();
+          final daysTaken =
+              completionDate.difference(mission.startDate).inDays;
+
+          return Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Screenshot(
+                controller: _screenshotController,
+                child: CertificateWidget(
+                  missionTitle: mission.title,
+                  amountSaved: mission.savedAmount,
+                  daysTaken: daysTaken < 0 ? 0 : daysTaken,
+                  completedAt: completionDate,
+                ),
               ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
+  }
+
+  Future<void> _shareCertificate(BuildContext context) async {
+    setState(() => _isSharing = true);
+
+    try {
+      final Uint8List? imageBytes = await _screenshotController.capture(
+        pixelRatio: 3.0,
+      );
+
+      if (imageBytes == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to capture screenshot')),
+        );
+        return;
+      }
+
+      final tempDir = Directory.systemTemp;
+      final file = File('${tempDir.path}/mission_certificate.png');
+      await file.writeAsBytes(imageBytes);
+
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        text: 'I completed my mission on Mission Invest!',
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Share failed: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSharing = false);
+      }
+    }
   }
 }

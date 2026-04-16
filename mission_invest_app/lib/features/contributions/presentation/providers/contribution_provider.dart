@@ -7,7 +7,9 @@ import '../../data/services/streak_service.dart';
 import '../../../home/presentation/providers/home_provider.dart';
 import '../../../missions/data/repositories/mission_repository.dart';
 import '../../../rewards/data/models/badge_model.dart';
+import '../../../rewards/data/models/xp_event.dart';
 import '../../../rewards/data/services/badge_service.dart';
+import '../../../rewards/data/services/xp_service.dart';
 import '../../../../repositories/user_repository.dart';
 
 // ---------------------------------------------------------------------------
@@ -60,6 +62,7 @@ class ContributionFlowNotifier extends StateNotifier<AsyncValue<ContributionResu
   final UserRepository _userRepo;
   final StreakService _streakService;
   final BadgeService _badgeService;
+  final XpService _xpService;
 
   ContributionFlowNotifier({
     required ContributionRepository contributionRepo,
@@ -67,11 +70,13 @@ class ContributionFlowNotifier extends StateNotifier<AsyncValue<ContributionResu
     required UserRepository userRepo,
     required StreakService streakService,
     required BadgeService badgeService,
+    required XpService xpService,
   })  : _contributionRepo = contributionRepo,
         _missionRepo = missionRepo,
         _userRepo = userRepo,
         _streakService = streakService,
         _badgeService = badgeService,
+        _xpService = xpService,
         super(const AsyncValue.data(null));
 
   /// Orchestrates the full contribution flow:
@@ -158,6 +163,53 @@ class ContributionFlowNotifier extends StateNotifier<AsyncValue<ContributionResu
         currentStreak: streakResult.newStreak,
       );
 
+      // 5. Award XP
+      await _xpService.awardXp(userId, XpEventType.dailyContribution,
+          missionId: missionId);
+
+      // Award XP for checkpoint milestones
+      final progress = mission.targetAmount > 0
+          ? (newSavedAmount / mission.targetAmount).clamp(0.0, 1.0)
+          : 0.0;
+      final oldProgress = mission.targetAmount > 0
+          ? (mission.savedAmount / mission.targetAmount).clamp(0.0, 1.0)
+          : 0.0;
+      for (final checkpoint in [0.25, 0.50, 0.75]) {
+        if (oldProgress < checkpoint && progress >= checkpoint) {
+          await _xpService.awardXp(userId, XpEventType.checkpointReached,
+              missionId: missionId);
+        }
+      }
+
+      // Award XP for streak milestones
+      final oldStreak = mission.currentStreak;
+      final newStreak = streakResult.newStreak;
+      if (oldStreak < 7 && newStreak >= 7) {
+        await _xpService.awardXp(userId, XpEventType.streak7,
+            missionId: missionId);
+      }
+      if (oldStreak < 30 && newStreak >= 30) {
+        await _xpService.awardXp(userId, XpEventType.streak30,
+            missionId: missionId);
+      }
+      if (oldStreak < 60 && newStreak >= 60) {
+        await _xpService.awardXp(userId, XpEventType.streak60,
+            missionId: missionId);
+      }
+
+      // Award XP for mission completion
+      if (missionCompleted) {
+        await _xpService.awardXp(userId, XpEventType.missionCompleted,
+            missionId: missionId);
+        // Check speed runner (completed before deadline)
+        if (updatedMission != null &&
+            updatedMission.completedAt != null &&
+            updatedMission.completedAt!.isBefore(updatedMission.endDate)) {
+          await _xpService.awardXp(userId, XpEventType.speedRunner,
+              missionId: missionId);
+        }
+      }
+
       // 6. Return result
       final result = ContributionResult(
         contributionId: contributionId,
@@ -193,5 +245,6 @@ final contributionFlowProvider = StateNotifierProvider<
     userRepo: ref.watch(userRepositoryProvider),
     streakService: ref.watch(streakServiceProvider),
     badgeService: ref.watch(badgeServiceProvider),
+    xpService: ref.watch(xpServiceProvider),
   );
 });

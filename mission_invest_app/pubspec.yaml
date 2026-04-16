@@ -25,6 +25,7 @@ dependencies:
   firebase_storage: ^12.4.4
   firebase_messaging: ^15.2.4
   firebase_analytics: ^11.4.4
+  cloud_functions: ^5.2.5
 
   # Networking
   dio: ^5.7.0
