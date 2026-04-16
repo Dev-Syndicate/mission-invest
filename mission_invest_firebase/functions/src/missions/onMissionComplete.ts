@@ -1,11 +1,11 @@
-import * as functions from 'firebase-functions';
+import { firestore } from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import { db, collections } from '../utils/firestore';
 import { sendPushNotification } from '../utils/fcm';
 import { awardBadge } from '../badges/awardBadge';
 import { logger } from '../utils/logger';
 
-export const onMissionComplete = functions.firestore
+export const onMissionComplete = firestore
   .document(`${collections.missions}/{missionId}`)
   .onUpdate(async (change, context) => {
     const before = change.before.data();

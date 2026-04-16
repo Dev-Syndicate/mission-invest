@@ -1,11 +1,11 @@
-import * as functions from 'firebase-functions';
+import { pubsub } from 'firebase-functions/v1';
 import axios from 'axios';
 import { db, collections } from '../utils/firestore';
 import { sendPushNotification } from '../utils/fcm';
 import { config } from '../config';
 import { logger } from '../utils/logger';
 
-export const triggerAiNudges = functions.pubsub
+export const triggerAiNudges = pubsub
   .schedule('0 12 * * *')
   .timeZone('Asia/Kolkata')
   .onRun(async () => {

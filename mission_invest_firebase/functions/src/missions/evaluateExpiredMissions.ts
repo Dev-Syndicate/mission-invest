@@ -1,9 +1,9 @@
-import * as functions from 'firebase-functions';
+import { pubsub } from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import { db, collections } from '../utils/firestore';
 import { logger } from '../utils/logger';
 
-export const evaluateExpiredMissions = functions.pubsub
+export const evaluateExpiredMissions = pubsub
   .schedule('30 0 * * *')
   .timeZone('Asia/Kolkata')
   .onRun(async () => {

@@ -1,11 +1,11 @@
-import * as functions from 'firebase-functions';
+import { pubsub } from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import { db, collections } from '../utils/firestore';
 import { sendPushNotification } from '../utils/fcm';
 import { logger } from '../utils/logger';
 import { subDays, startOfDay } from 'date-fns';
 
-export const evaluateDailyStreaks = functions.pubsub
+export const evaluateDailyStreaks = pubsub
   .schedule('5 0 * * *')
   .timeZone('Asia/Kolkata')
   .onRun(async () => {

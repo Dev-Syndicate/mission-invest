@@ -1,10 +1,10 @@
-import * as functions from 'firebase-functions';
+import { pubsub } from 'firebase-functions/v1';
 import { db, collections } from '../utils/firestore';
 import { sendPushNotification } from '../utils/fcm';
 import { logger } from '../utils/logger';
 import { startOfDay } from 'date-fns';
 
-export const sendStreakAlerts = functions.pubsub
+export const sendStreakAlerts = pubsub
   .schedule('0 20 * * *')
   .timeZone('Asia/Kolkata')
   .onRun(async () => {

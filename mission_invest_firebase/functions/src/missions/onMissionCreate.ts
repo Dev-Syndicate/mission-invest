@@ -1,10 +1,10 @@
-import * as functions from 'firebase-functions';
+import { firestore } from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import { db, collections } from '../utils/firestore';
 import { sendPushNotification } from '../utils/fcm';
 import { logger } from '../utils/logger';
 
-export const onMissionCreate = functions.firestore
+export const onMissionCreate = firestore
   .document(`${collections.missions}/{missionId}`)
   .onCreate(async (snapshot, context) => {
     const mission = snapshot.data();

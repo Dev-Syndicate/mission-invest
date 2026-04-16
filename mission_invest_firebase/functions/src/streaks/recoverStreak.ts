@@ -1,34 +1,34 @@
-import * as functions from 'firebase-functions';
+import { https } from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import { db, collections } from '../utils/firestore';
 import { logger } from '../utils/logger';
 import { subDays } from 'date-fns';
 
-export const recoverStreak = functions.https.onCall(async (request) => {
-  const { missionId } = request.data;
-  const userId = request.auth?.uid;
+export const recoverStreak = https.onCall(async (data, context) => {
+  const { missionId } = data;
+  const userId = context.auth?.uid;
 
   if (!userId) {
-    throw new functions.https.HttpsError('unauthenticated', 'Must be logged in');
+    throw new https.HttpsError('unauthenticated', 'Must be logged in');
   }
 
   if (!missionId) {
-    throw new functions.https.HttpsError('invalid-argument', 'missionId required');
+    throw new https.HttpsError('invalid-argument', 'missionId required');
   }
 
   try {
     const missionDoc = await db.collection(collections.missions).doc(missionId).get();
     if (!missionDoc.exists) {
-      throw new functions.https.HttpsError('not-found', 'Mission not found');
+      throw new https.HttpsError('not-found', 'Mission not found');
     }
 
     const mission = missionDoc.data()!;
     if (mission.userId !== userId) {
-      throw new functions.https.HttpsError('permission-denied', 'Not your mission');
+      throw new https.HttpsError('permission-denied', 'Not your mission');
     }
 
     if (mission.status !== 'active') {
-      throw new functions.https.HttpsError('failed-precondition', 'Mission is not active');
+      throw new https.HttpsError('failed-precondition', 'Mission is not active');
     }
 
     // Check if recovery was used in last 7 days
@@ -42,7 +42,7 @@ export const recoverStreak = functions.https.onCall(async (request) => {
       .get();
 
     if (!recentRecoveries.empty) {
-      throw new functions.https.HttpsError(
+      throw new https.HttpsError(
         'failed-precondition',
         'Recovery already used in the last 7 days for this mission'
       );
@@ -72,8 +72,8 @@ export const recoverStreak = functions.https.onCall(async (request) => {
 
     return { success: true, restoredStreak: previousStreak };
   } catch (error) {
-    if (error instanceof functions.https.HttpsError) throw error;
+    if (error instanceof https.HttpsError) throw error;
     logger.error('recoverStreak failed:', error);
-    throw new functions.https.HttpsError('internal', 'Recovery failed');
+    throw new https.HttpsError('internal', 'Recovery failed');
   }
 });

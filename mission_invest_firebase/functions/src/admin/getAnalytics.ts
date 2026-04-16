@@ -1,16 +1,16 @@
-import * as functions from 'firebase-functions';
+import { https } from 'firebase-functions/v1';
 import { db, collections } from '../utils/firestore';
 import { logger } from '../utils/logger';
 
-export const getAdminAnalytics = functions.https.onCall(async (request) => {
-  const userId = request.auth?.uid;
+export const getAdminAnalytics = https.onCall(async (data, context) => {
+  const userId = context.auth?.uid;
   if (!userId) {
-    throw new functions.https.HttpsError('unauthenticated', 'Must be logged in');
+    throw new https.HttpsError('unauthenticated', 'Must be logged in');
   }
 
   const userDoc = await db.collection(collections.users).doc(userId).get();
   if (!userDoc.data()?.isAdmin) {
-    throw new functions.https.HttpsError('permission-denied', 'Admin only');
+    throw new https.HttpsError('permission-denied', 'Admin only');
   }
 
   try {
@@ -59,6 +59,6 @@ export const getAdminAnalytics = functions.https.onCall(async (request) => {
     };
   } catch (error) {
     logger.error('getAdminAnalytics failed:', error);
-    throw new functions.https.HttpsError('internal', 'Analytics fetch failed');
+    throw new https.HttpsError('internal', 'Analytics fetch failed');
   }
 });

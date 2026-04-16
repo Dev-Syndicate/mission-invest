@@ -1,9 +1,9 @@
-import * as functions from 'firebase-functions';
+import { pubsub } from 'firebase-functions/v1';
 import { db, collections } from '../utils/firestore';
 import { sendPushNotification } from '../utils/fcm';
 import { logger } from '../utils/logger';
 
-export const sendDailyReminders = functions.pubsub
+export const sendDailyReminders = pubsub
   .schedule('0 9 * * *')
   .timeZone('Asia/Kolkata')
   .onRun(async () => {

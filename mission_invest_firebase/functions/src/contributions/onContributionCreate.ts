@@ -1,11 +1,11 @@
-import * as functions from 'firebase-functions';
+import { firestore } from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import { db, collections } from '../utils/firestore';
 import { sendPushNotification } from '../utils/fcm';
 import { checkBadgeEligibility } from '../badges/checkBadgeEligibility';
 import { logger } from '../utils/logger';
 
-export const onContributionCreate = functions.firestore
+export const onContributionCreate = firestore
   .document(`${collections.contributions}/{contributionId}`)
   .onCreate(async (snapshot, context) => {
     const contribution = snapshot.data();
@@ -24,7 +24,7 @@ export const onContributionCreate = functions.firestore
         const newStreak = (mission.currentStreak || 0) + 1;
         const longestStreak = Math.max(mission.longestStreak || 0, newStreak);
 
-        const updateData: Record<string, any> = {
+        const updateData: Record<string, unknown> = {
           savedAmount: newSavedAmount,
           currentStreak: newStreak,
           longestStreak,

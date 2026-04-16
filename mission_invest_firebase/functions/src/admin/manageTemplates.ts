@@ -1,37 +1,37 @@
-import * as functions from 'firebase-functions';
+import { https } from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import { db, collections } from '../utils/firestore';
 
-export const manageTemplate = functions.https.onCall(async (request) => {
-  const userId = request.auth?.uid;
-  if (!userId) throw new functions.https.HttpsError('unauthenticated', 'Login required');
+export const manageTemplate = https.onCall(async (data, context) => {
+  const userId = context.auth?.uid;
+  if (!userId) throw new https.HttpsError('unauthenticated', 'Login required');
 
   const userDoc = await db.collection(collections.users).doc(userId).get();
   if (!userDoc.data()?.isAdmin) {
-    throw new functions.https.HttpsError('permission-denied', 'Admin only');
+    throw new https.HttpsError('permission-denied', 'Admin only');
   }
 
-  const { action, templateId, data } = request.data;
+  const { action, templateId, data: templateData } = data;
 
   switch (action) {
-    case 'create':
+    case 'create': {
       const docRef = await db.collection(collections.templates).add({
-        ...data,
+        ...templateData,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
       });
       return { success: true, templateId: docRef.id };
-
+    }
     case 'update':
-      if (!templateId) throw new functions.https.HttpsError('invalid-argument', 'templateId required');
-      await db.collection(collections.templates).doc(templateId).update(data);
+      if (!templateId) throw new https.HttpsError('invalid-argument', 'templateId required');
+      await db.collection(collections.templates).doc(templateId).update(templateData);
       return { success: true };
 
     case 'delete':
-      if (!templateId) throw new functions.https.HttpsError('invalid-argument', 'templateId required');
+      if (!templateId) throw new https.HttpsError('invalid-argument', 'templateId required');
       await db.collection(collections.templates).doc(templateId).delete();
       return { success: true };
 
     default:
-      throw new functions.https.HttpsError('invalid-argument', 'Invalid action');
+      throw new https.HttpsError('invalid-argument', 'Invalid action');
   }
 });
