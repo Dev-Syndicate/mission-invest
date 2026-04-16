@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "779968530362",
+    "project_id": "mission-inverse",
+    "storage_bucket": "mission-inverse.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:779968530362:android:8ae0460afc1c00e8f23f83",
+        "android_client_info": {
+          "package_name": "com.example.mission_invest_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "779968530362-tk2h9cjck36hbnnm12fgmaienjfdgjq4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAGAoOqiWtjsIJBV-XA2eycDMCuXSWc9M4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "779968530362-tk2h9cjck36hbnnm12fgmaienjfdgjq4.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
