@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../home/presentation/providers/home_provider.dart';
 import '../../../../repositories/user_repository.dart';
+import '../../../../shared/widgets/app_loading.dart';
 
 class NotificationSettingsPage extends ConsumerWidget {
   const NotificationSettingsPage({super.key});
@@ -14,8 +15,8 @@ class NotificationSettingsPage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Notifications')),
       body: userAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        loading: () => const Center(child: AppLoading()),
+        error: (e, _) => const Center(child: AppLoading()),
         data: (user) {
           if (user == null) {
             return const Center(child: Text('Not signed in'));
@@ -24,7 +25,6 @@ class NotificationSettingsPage extends ConsumerWidget {
           final notificationsEnabled = user.notificationsEnabled;
           final reminderTime = user.notificationTime;
 
-          // Parse the stored time string (e.g. "09:00") into a TimeOfDay.
           final parts = reminderTime.split(':');
           final hour = int.tryParse(parts[0]) ?? 9;
           final minute = parts.length > 1 ? (int.tryParse(parts[1]) ?? 0) : 0;
@@ -56,11 +56,11 @@ class NotificationSettingsPage extends ConsumerWidget {
                     initialTime: timeOfDay,
                   );
                   if (picked != null) {
-                    final formatted =
-                        '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+                    final h = picked.hour.toString().padLeft(2, "0");
+                    final m = picked.minute.toString().padLeft(2, "0");
                     ref.read(userRepositoryProvider).updateUser(
                       user.uid,
-                      {'notificationTime': formatted},
+                      {'notificationTime': "$h:$m"},
                     );
                   }
                 },

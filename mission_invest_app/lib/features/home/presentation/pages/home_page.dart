@@ -1,10 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../missions/data/models/mission_model.dart';
 import '../../../../shared/widgets/app_loading.dart';
-import '../../../../shared/widgets/app_error_widget.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../providers/home_provider.dart';
 import '../widgets/mission_card.dart';
@@ -55,10 +55,12 @@ class HomePage extends ConsumerWidget {
       ),
       body: missionsAsync.when(
         loading: () => const Center(child: AppLoading()),
-        error: (error, _) => AppErrorWidget(
-          message: 'Failed to load missions: $error',
-          onRetry: () => ref.invalidate(homeActiveMissionsProvider),
-        ),
+        error: (error, _) {
+          // Transient errors (e.g. permission settling) — show loading briefly
+          // instead of flashing an error screen.
+          debugPrint('Home missions error: $error');
+          return const Center(child: AppLoading());
+        },
         data: (missions) {
           if (missions.isEmpty) {
             return ListView(
