@@ -1,0 +1,83 @@
+name: mission_invest_app
+description: "Mission Invest — Gamified savings goal tracker"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+  # State Management
+  flutter_riverpod: ^2.6.1
+  riverpod_annotation: ^2.6.1
+
+  # Routing
+  go_router: ^14.8.1
+
+  # Firebase — uncomment after running `flutterfire configure`
+  # firebase_core: ^3.12.1
+  # firebase_auth: ^5.5.1
+  # cloud_firestore: ^5.6.5
+  # firebase_storage: ^12.4.4
+  # firebase_messaging: ^15.2.4
+  # firebase_analytics: ^11.4.4
+
+  # Networking
+  dio: ^5.7.0
+
+  # UI Components
+  flutter_animate: ^4.5.2
+  lottie: ^3.3.1
+  percent_indicator: ^4.2.5
+  fl_chart: ^0.70.2
+  cached_network_image: ^3.4.1
+  shimmer: ^3.0.0
+  flutter_svg: ^2.0.16
+
+  # Forms
+  reactive_forms: ^18.2.2
+
+  # Image
+  image_picker: ^1.1.2
+
+  # Sharing
+  share_plus: ^10.1.4
+  screenshot: ^3.0.0
+
+  # Local Storage
+  shared_preferences: ^2.5.2
+
+  # Utility
+  intl: ^0.20.1
+  freezed_annotation: ^2.4.4
+  json_annotation: ^4.9.0
+  uuid: ^4.5.1
+  url_launcher: ^6.3.1
+  package_info_plus: ^8.2.1
+  connectivity_plus: ^6.1.1
+
+  # Google Sign-In — uncomment after Firebase setup
+  # google_sign_in: ^6.2.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  build_runner: ^2.4.13
+  freezed: ^2.5.7
+  json_serializable: ^6.9.0
+  riverpod_generator: ^2.6.3
+  mockito: ^5.4.4
+  mocktail: ^1.0.4
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/icons/
+    - assets/lottie/
