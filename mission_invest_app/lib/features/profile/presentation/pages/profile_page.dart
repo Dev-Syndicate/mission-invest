@@ -115,6 +115,15 @@ class ProfilePage extends ConsumerWidget {
 
               const SizedBox(height: 16),
 
+              // Admin panel (only visible for admins)
+              if (user.isAdmin)
+                ListTile(
+                  leading: const Icon(Icons.admin_panel_settings),
+                  title: const Text('Admin Panel'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.go('/admin'),
+                ),
+
               // Navigation items
               ListTile(
                 leading: const Icon(Icons.notifications_outlined),

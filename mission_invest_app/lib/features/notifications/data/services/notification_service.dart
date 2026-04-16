@@ -2,6 +2,8 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:timezone/data/latest_all.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
 
 import '../../../../repositories/user_repository.dart';
 
@@ -122,13 +124,22 @@ class NotificationService {
 
     await _localNotifications.cancel(id: 0);
 
-    await _localNotifications.periodicallyShowWithDuration(
+    tz.initializeTimeZones();
+    final now = tz.TZDateTime.now(tz.local);
+    var scheduled = tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
+    // If the time has already passed today, schedule for tomorrow
+    if (scheduled.isBefore(now)) {
+      scheduled = scheduled.add(const Duration(days: 1));
+    }
+
+    await _localNotifications.zonedSchedule(
       id: 0,
       title: title,
       body: body,
-      repeatDurationInterval: const Duration(hours: 24),
+      scheduledDate: scheduled,
       notificationDetails: details,
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.time,
     );
 
     debugPrint('Scheduled daily reminder at $hour:$minute');
