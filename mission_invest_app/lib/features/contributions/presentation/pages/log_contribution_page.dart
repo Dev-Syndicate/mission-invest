@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 import '../../../../core/utils/validators.dart';
@@ -79,7 +80,7 @@ class _LogContributionPageState extends ConsumerState<LogContributionPage> {
         );
       }
 
-      Navigator.of(context).pop();
+      if (context.mounted) context.go('/missions/${widget.missionId}');
     } else {
       final flowState = ref.read(contributionFlowProvider);
       final errorMsg = flowState.hasError

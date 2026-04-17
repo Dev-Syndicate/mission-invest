@@ -1,4 +1,5 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
+from pydantic.alias_generators import to_camel
 from typing import Literal, Optional, Dict, Any
 
 
@@ -16,6 +17,8 @@ class NudgeRequest(BaseModel):
 
 
 class NudgeResponse(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
     message: str
     action_suggestion: Optional[
         Literal[

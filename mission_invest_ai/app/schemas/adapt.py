@@ -1,4 +1,5 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
+from pydantic.alias_generators import to_camel
 from typing import Literal, Optional
 
 
@@ -13,6 +14,8 @@ class AdaptRequest(BaseModel):
 
 
 class AdaptResponse(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
     suggestion: Literal["reduce_daily", "extend_timeline", "split_mission", "on_track"]
     new_daily_amount: Optional[float] = None
     new_end_date: Optional[str] = None

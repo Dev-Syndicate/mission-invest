@@ -7,7 +7,12 @@ import '../../../../core/utils/currency_formatter.dart';
 import '../../../../shared/widgets/app_loading.dart';
 import '../../../../shared/widgets/app_error_widget.dart';
 import '../../../home/presentation/providers/home_provider.dart';
+import '../../../ai/presentation/providers/ai_provider.dart';
+import '../../../ai/presentation/widgets/ai_nudge_card.dart';
+import '../../../ai/presentation/widgets/ai_suggestion_bottom_sheet.dart';
+import '../../../ai/data/models/adapt_response.dart';
 import '../../data/models/mission_model.dart';
+import '../../data/repositories/mission_repository.dart';
 import '../providers/mission_detail_provider.dart';
 import '../widgets/mission_map.dart';
 import '../widgets/morphing_vision_card.dart';
@@ -116,6 +121,12 @@ class _MissionDetailBody extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
         ],
+
+        // AI nudge card (shown when user is struggling)
+        if (mission.isActive) _AiNudgeSection(mission: mission),
+
+        // AI prediction chip
+        if (mission.isActive) _AiPredictionSection(mission: mission),
 
         // Mission journey map
         MissionMap(mission: mission),
@@ -269,6 +280,9 @@ class _MissionDetailBody extends ConsumerWidget {
           ),
         ),
 
+        // AI adaptation suggestion
+        if (mission.isActive) _AiAdaptSection(mission: mission),
+
         const SizedBox(height: 24),
 
         // Action buttons
@@ -409,6 +423,344 @@ class _InfoRow extends StatelessWidget {
               ),
         ),
       ],
+    );
+  }
+}
+
+// ── AI Helpers ──
+
+String _adaptLabel(String suggestion) {
+  switch (suggestion) {
+    case 'reduce_daily':
+      return 'AI suggests reducing your daily target';
+    case 'extend_timeline':
+      return 'AI suggests extending your timeline';
+    case 'split_mission':
+      return 'AI suggests splitting this mission';
+    default:
+      return 'AI has a suggestion for you';
+  }
+}
+
+void _showAdaptSheet(
+  BuildContext context,
+  WidgetRef ref,
+  MissionModel mission,
+  AdaptResponse adapt,
+) {
+  final hasChanges =
+      adapt.newDailyAmount != null || adapt.newEndDate != null;
+
+  AiSuggestionBottomSheet.show(
+    context,
+    suggestion: hasChanges
+        ? _adaptLabel(adapt.suggestion)
+        : 'You\'re on track!',
+    reasoning: adapt.reasoning,
+    onAccept: hasChanges
+        ? () async {
+            final repo = ref.read(missionRepositoryProvider);
+            final updates = <String, dynamic>{};
+
+            if (adapt.newDailyAmount != null) {
+              updates['dailyTarget'] = adapt.newDailyAmount;
+            }
+            if (adapt.newEndDate != null) {
+              updates['endDate'] = adapt.newEndDate;
+            }
+
+            try {
+              await repo.updateMission(mission.id, updates);
+              if (context.mounted) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                      content:
+                          Text('Mission updated with AI suggestion!')),
+                );
+                ref.invalidate(missionDetailProvider(mission.id));
+              }
+            } catch (e) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Failed to update: $e')),
+                );
+              }
+            }
+          }
+        : null,
+  );
+}
+
+// ── AI Integration Widgets ──
+
+class _AiNudgeSection extends ConsumerWidget {
+  final MissionModel mission;
+
+  const _AiNudgeSection({required this.mission});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final nudgeAsync = ref.watch(missionNudgeProvider(mission));
+
+    return nudgeAsync.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.only(bottom: 16),
+        child: Center(
+          child: SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      ),
+      error: (error, _) => Padding(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: Card(
+          color: Theme.of(context).colorScheme.errorContainer,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                Icon(Icons.smart_toy, color: Theme.of(context).colorScheme.onErrorContainer, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'AI suggestions unavailable',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onErrorContainer,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.refresh, size: 20),
+                  onPressed: () => ref.invalidate(missionNudgeProvider(mission)),
+                  color: Theme.of(context).colorScheme.onErrorContainer,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      data: (nudge) {
+        if (nudge == null) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: AiNudgeCard(
+            message: nudge.message,
+            actionSuggestion: nudge.actionSuggestion,
+            onAccept: () {
+              final adaptAsync =
+                  ref.read(missionAdaptProvider(mission));
+              adaptAsync.whenData((adapt) {
+                if (adapt != null && context.mounted) {
+                  _showAdaptSheet(context, ref, mission, adapt);
+                }
+              });
+            },
+            onDismiss: () =>
+                ref.invalidate(missionNudgeProvider(mission)),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _AiPredictionSection extends ConsumerWidget {
+  final MissionModel mission;
+
+  const _AiPredictionSection({required this.mission});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final predictionAsync = ref.watch(missionPredictionProvider(mission));
+    final theme = Theme.of(context);
+
+    return predictionAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (error, _) => const SizedBox.shrink(),
+      data: (prediction) {
+        if (prediction == null) return const SizedBox.shrink();
+
+        final probability = prediction.completionProbability;
+        final riskLevel = prediction.riskLevel;
+        final Color riskColor;
+        final IconData riskIcon;
+
+        switch (riskLevel) {
+          case 'low':
+            riskColor = AppColors.success;
+            riskIcon = Icons.check_circle_outline;
+          case 'medium':
+            riskColor = AppColors.warning;
+            riskIcon = Icons.info_outline;
+          case 'high':
+            riskColor = AppColors.progressRed;
+            riskIcon = Icons.warning_amber_rounded;
+          case 'critical':
+            riskColor = AppColors.progressRed;
+            riskIcon = Icons.error_outline;
+          default:
+            riskColor = AppColors.info;
+            riskIcon = Icons.analytics_outlined;
+        }
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: Card(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: riskColor.withAlpha(76)),
+            ),
+            color: riskColor.withAlpha(20),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                children: [
+                  Icon(riskIcon, color: riskColor, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${(probability * 100).toStringAsFixed(0)}% chance of completion',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: riskColor,
+                          ),
+                        ),
+                        if (prediction.factors.isNotEmpty)
+                          Text(
+                            prediction.factors.first,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurface
+                                  .withAlpha(153),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _AiAdaptSection extends ConsumerWidget {
+  final MissionModel mission;
+
+  const _AiAdaptSection({required this.mission});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final adaptAsync = ref.watch(missionAdaptProvider(mission));
+
+    return adaptAsync.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.only(top: 12),
+        child: Center(
+          child: SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      ),
+      error: (error, _) => Padding(
+        padding: const EdgeInsets.only(top: 12),
+        child: Card(
+          color: Theme.of(context).colorScheme.errorContainer,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                Icon(Icons.smart_toy, color: Theme.of(context).colorScheme.onErrorContainer, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'AI plan unavailable',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onErrorContainer,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.refresh, size: 20),
+                  onPressed: () => ref.invalidate(missionAdaptProvider(mission)),
+                  color: Theme.of(context).colorScheme.onErrorContainer,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      data: (adapt) {
+        if (adapt == null || adapt.suggestion == 'on_track') {
+          return const SizedBox.shrink();
+        }
+        return Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: Card(
+            color: Theme.of(context).colorScheme.tertiaryContainer,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () => _showAdaptSheet(context, ref, mission, adapt),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.smart_toy,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onTertiaryContainer,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        _adaptLabel(adapt.suggestion),
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodyMedium
+                            ?.copyWith(
+                              fontWeight: FontWeight.w500,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onTertiaryContainer,
+                            ),
+                      ),
+                    ),
+                    Icon(
+                      Icons.chevron_right,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onTertiaryContainer
+                          .withAlpha(153),
+                      size: 20,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

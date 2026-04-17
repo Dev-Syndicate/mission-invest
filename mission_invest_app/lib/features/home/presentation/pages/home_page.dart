@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../missions/data/models/mission_model.dart';
+import '../../../ai/presentation/providers/ai_provider.dart';
 import '../../../../shared/widgets/app_loading.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../providers/home_provider.dart';
@@ -146,6 +147,12 @@ class HomePage extends ConsumerWidget {
                 const StreakBanner()
                     .animate()
                     .fadeIn(duration: 500.ms, delay: 100.ms),
+                const SizedBox(height: 16),
+
+                // AI daily motivation
+                _AiMotivationCard()
+                    .animate()
+                    .fadeIn(duration: 400.ms, delay: 200.ms),
                 const SizedBox(height: 24),
 
                 // Active Missions header
@@ -317,6 +324,56 @@ class _HomeEntryCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _AiMotivationCard extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final motivationAsync = ref.watch(dailyMotivationProvider);
+    final theme = Theme.of(context);
+
+    return motivationAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
+      data: (motivation) {
+        if (motivation == null) return const SizedBox.shrink();
+
+        return Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                theme.colorScheme.primaryContainer,
+                theme.colorScheme.primaryContainer.withAlpha(140),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.smart_toy,
+                color: theme.colorScheme.primary,
+                size: 22,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  motivation.message,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onPrimaryContainer,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

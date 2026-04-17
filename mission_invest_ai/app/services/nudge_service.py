@@ -32,7 +32,9 @@ async def generate_nudge(req: NudgeRequest) -> NudgeResponse:
         f"Tone: personal, urgent but not preachy. Mention the goal name."
     )
 
-    message = await generate_message(prompt)
+    message = await generate_message(
+        prompt, goal=req.mission_title, days=req.days_left
+    )
 
     return NudgeResponse(
         message=message,

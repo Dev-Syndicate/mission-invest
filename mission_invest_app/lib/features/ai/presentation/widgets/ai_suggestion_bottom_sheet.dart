@@ -41,9 +41,14 @@ class AiSuggestionBottomSheet extends StatelessWidget {
             const SizedBox(height: 8),
             Text(reasoning, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurface.withAlpha(153))),
             const SizedBox(height: 24),
-            AppButton(label: 'Apply Suggestion', onPressed: onAccept ?? () => Navigator.pop(context)),
-            const SizedBox(height: 8),
-            Center(child: TextButton(onPressed: () => Navigator.pop(context), child: const Text('Not now'))),
+            AppButton(
+              label: onAccept != null ? 'Apply Suggestion' : 'Got it',
+              onPressed: onAccept ?? () => Navigator.pop(context),
+            ),
+            if (onAccept != null) ...[
+              const SizedBox(height: 8),
+              Center(child: TextButton(onPressed: () => Navigator.pop(context), child: const Text('Not now'))),
+            ],
           ],
         ),
       ),

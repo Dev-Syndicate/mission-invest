@@ -35,19 +35,19 @@ import '../features/teams/presentation/pages/team_missions_list_page.dart';
 import '../features/teams/presentation/pages/team_mission_page.dart';
 import '../shared/widgets/bottom_nav_shell.dart';
 
-final _rootNavigatorKey = GlobalKey<NavigatorState>();
-final _shellNavigatorKey = GlobalKey<NavigatorState>();
+final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
+final _shellNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'shell');
 
 final appRouterProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authStateChangesProvider);
-  final userProfile = ref.watch(currentUserProfileProvider);
-  final isAdmin = userProfile.valueOrNull?.isAdmin ?? false;
-
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: '/',
     refreshListenable: _RouterRefreshNotifier(ref, authStateChangesProvider, currentUserProfileProvider),
     redirect: (context, state) {
+      final authState = ref.read(authStateChangesProvider);
+      final userProfile = ref.read(currentUserProfileProvider);
+      final isAdmin = userProfile.valueOrNull?.isAdmin ?? false;
+
       final isLoading = authState.isLoading;
       final user = authState.valueOrNull;
       final isLoggedIn = user != null;
@@ -190,8 +190,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/missions/:missionId/contribute',
         name: 'logContribution',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (_, state) => LogContributionPage(
-          missionId: state.pathParameters['missionId']!,
+        pageBuilder: (_, state) => MaterialPage(
+          key: state.pageKey,
+          child: LogContributionPage(
+            missionId: state.pathParameters['missionId']!,
+          ),
         ),
       ),
       GoRoute(
