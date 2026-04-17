@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../home/presentation/providers/home_provider.dart';
@@ -11,6 +12,19 @@ export '../../data/repositories/season_repository.dart'
         seasonProvider,
         seasonRepositoryProvider,
         userSeasonRankProvider;
+
+/// Active challenges for all users.
+final activeChallengesProvider =
+    StreamProvider<List<Map<String, dynamic>>>((ref) {
+  return FirebaseFirestore.instance
+      .collection('challenges')
+      .snapshots()
+      .map((snap) => snap.docs.map((doc) {
+            final data = Map<String, dynamic>.from(doc.data());
+            data['id'] = doc.id;
+            return data;
+          }).toList());
+});
 
 /// Filtered active seasons for the current user's view.
 final currentActiveSeasonsProvider =

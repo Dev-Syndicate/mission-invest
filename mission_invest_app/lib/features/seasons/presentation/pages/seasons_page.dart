@@ -17,10 +17,11 @@ class SeasonsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final seasonsAsync = ref.watch(currentActiveSeasonsProvider);
+    final challengesAsync = ref.watch(activeChallengesProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Challenge Seasons'),
+        title: const Text('Challenges & Seasons'),
       ),
       body: seasonsAsync.when(
         loading: () => const Center(child: AppLoading()),
@@ -29,44 +30,46 @@ class SeasonsPage extends ConsumerWidget {
           onRetry: () => ref.invalidate(currentActiveSeasonsProvider),
         ),
         data: (seasons) {
-          if (seasons.isEmpty) {
-            return RefreshIndicator(
-              onRefresh: () async {
-                ref.invalidate(currentActiveSeasonsProvider);
-              },
-              child: LayoutBuilder(
-                builder: (context, constraints) => SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                    child: const Center(
-                      child: EmptyState(
-                        icon: Icons.emoji_events_outlined,
-                        title: 'No active seasons',
-                        subtitle: 'Check back soon for new challenge seasons!',
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            );
-          }
-
           return RefreshIndicator(
             onRefresh: () async {
               ref.invalidate(currentActiveSeasonsProvider);
+              ref.invalidate(activeChallengesProvider);
             },
-            child: ListView.builder(
+            child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.all(16),
-              itemCount: seasons.length,
-              itemBuilder: (context, index) {
-                final season = seasons[index];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: _SeasonBannerCard(season: season),
-                );
-              },
+              children: [
+                // Challenges section
+                _ChallengesSection(challengesAsync: challengesAsync),
+
+                // Seasons header
+                if (seasons.isNotEmpty) ...[
+                  Text(
+                    'Seasons',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+
+                // Season cards
+                ...seasons.map((season) => Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: _SeasonBannerCard(season: season),
+                    )),
+
+                // Empty state when nothing at all
+                if (seasons.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 40),
+                    child: EmptyState(
+                      icon: Icons.emoji_events_outlined,
+                      title: 'No active seasons',
+                      subtitle: 'Check back soon for new challenge seasons!',
+                    ),
+                  ),
+              ],
             ),
           );
         },
@@ -349,5 +352,120 @@ class _SeasonBannerCard extends ConsumerWidget {
         ),
       );
     });
+  }
+}
+
+class _ChallengesSection extends StatelessWidget {
+  final AsyncValue<List<Map<String, dynamic>>> challengesAsync;
+
+  const _ChallengesSection({required this.challengesAsync});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return challengesAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, _) => Text('Challenges error: $error', style: TextStyle(color: Colors.red)),
+      data: (challenges) {
+        if (challenges.isEmpty) return const SizedBox.shrink();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Active Challenges',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            ...challenges.map((challenge) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _ChallengeCard(challenge: challenge),
+                )),
+            const SizedBox(height: 20),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _ChallengeCard extends StatelessWidget {
+  final Map<String, dynamic> challenge;
+
+  const _ChallengeCard({required this.challenge});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final title = challenge['title'] as String? ?? 'Challenge';
+    final description = challenge['description'] as String? ?? '';
+    final targetAmount = (challenge['targetAmount'] as num?)?.toDouble();
+
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      clipBehavior: Clip.antiAlias,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              theme.colorScheme.primary,
+              theme.colorScheme.primary.withAlpha(200),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.flag_rounded, color: Colors.white, size: 22),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (description.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                description,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: Colors.white.withAlpha(210),
+                ),
+              ),
+            ],
+            if (targetAmount != null) ...[
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withAlpha(30),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  'Target: \u20B9${targetAmount.toStringAsFixed(0)}',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 }
