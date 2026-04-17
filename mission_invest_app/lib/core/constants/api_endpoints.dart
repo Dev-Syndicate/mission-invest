@@ -3,7 +3,7 @@ class ApiEndpoints {
 
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://172.16.41.115:8000',
+    defaultValue: 'http://192.168.137.28:8000',
   );
 
   static const String health = '/health';

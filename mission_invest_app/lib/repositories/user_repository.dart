@@ -51,7 +51,12 @@ class UserRepository {
   Map<String, dynamic> _fromFirestore(Map<String, dynamic> data, String id) {
     final json = Map<String, dynamic>.from(data);
     json['uid'] = id;
+    json['displayName'] = json['displayName'] ?? '';
+    json['email'] = json['email'] ?? '';
     _convertTimestamps(json);
+    // Ensure required DateTime fields have fallback values
+    json['createdAt'] ??= DateTime.now().toIso8601String();
+    json['updatedAt'] ??= DateTime.now().toIso8601String();
     return json;
   }
 
