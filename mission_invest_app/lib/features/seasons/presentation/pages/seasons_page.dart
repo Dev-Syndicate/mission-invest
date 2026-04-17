@@ -3,10 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:mission_invest_app/features/missions/data/models/mission_model.dart';
 
+import 'package:go_router/go_router.dart';
+
 import '../../../../shared/widgets/app_loading.dart';
 import '../../../../shared/widgets/app_error_widget.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../home/presentation/providers/home_provider.dart';
+import '../../../missions/presentation/providers/mission_create_provider.dart';
 import '../../data/models/season_model.dart';
 import '../providers/season_provider.dart';
 import '../../../social/presentation/widgets/anonymous_leaderboard.dart';
@@ -392,17 +395,72 @@ class _ChallengesSection extends StatelessWidget {
   }
 }
 
-class _ChallengeCard extends StatelessWidget {
+class _ChallengeCard extends ConsumerStatefulWidget {
   final Map<String, dynamic> challenge;
 
   const _ChallengeCard({required this.challenge});
 
   @override
+  ConsumerState<_ChallengeCard> createState() => _ChallengeCardState();
+}
+
+class _ChallengeCardState extends ConsumerState<_ChallengeCard> {
+  bool _isJoining = false;
+
+  Future<void> _startMission() async {
+    final challenge = widget.challenge;
+    final title = challenge['title'] as String? ?? 'Challenge';
+    final targetAmount = (challenge['targetAmount'] as num?)?.toDouble() ?? 1000;
+    final startDateStr = challenge['startDate'] as String?;
+    final endDateStr = challenge['endDate'] as String?;
+
+    int durationDays = 30;
+    if (startDateStr != null && endDateStr != null) {
+      final start = DateTime.tryParse(startDateStr);
+      final end = DateTime.tryParse(endDateStr);
+      if (start != null && end != null) {
+        durationDays = end.difference(start).inDays.clamp(10, 180);
+      }
+    }
+
+    setState(() => _isJoining = true);
+
+    final missionId = await ref.read(missionCreateProvider.notifier).createMission(
+      title: title,
+      category: 'custom',
+      targetAmount: targetAmount,
+      durationDays: durationDays,
+      frequency: 'daily',
+      storyHeadline: 'Challenge accepted!',
+      missionEmoji: '\u{1F3C6}',
+    );
+
+    setState(() => _isJoining = false);
+
+    if (!mounted) return;
+
+    if (missionId != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Mission "$title" created!')),
+      );
+      context.go('/missions/$missionId');
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to create mission')),
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final challenge = widget.challenge;
     final title = challenge['title'] as String? ?? 'Challenge';
     final description = challenge['description'] as String? ?? '';
     final targetAmount = (challenge['targetAmount'] as num?)?.toDouble();
+    final endDateStr = challenge['endDate'] as String?;
+    final endDate = endDateStr != null ? DateTime.tryParse(endDateStr) : null;
+    final daysLeft = endDate != null ? endDate.difference(DateTime.now()).inDays : null;
 
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -424,7 +482,7 @@ class _ChallengeCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(Icons.flag_rounded, color: Colors.white, size: 22),
+                const Icon(Icons.flag_rounded, color: Colors.white, size: 22),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -446,23 +504,67 @@ class _ChallengeCard extends StatelessWidget {
                 ),
               ),
             ],
-            if (targetAmount != null) ...[
-              const SizedBox(height: 10),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white.withAlpha(30),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  'Target: \u20B9${targetAmount.toStringAsFixed(0)}',
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                if (targetAmount != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withAlpha(30),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '\u20B9${targetAmount.toStringAsFixed(0)}',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                if (daysLeft != null) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withAlpha(30),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '$daysLeft days left',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: _isJoining ? null : _startMission,
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: theme.colorScheme.primary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
                   ),
                 ),
+                child: _isJoining
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text(
+                        'Start Mission',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
               ),
-            ],
+            ),
           ],
         ),
       ),

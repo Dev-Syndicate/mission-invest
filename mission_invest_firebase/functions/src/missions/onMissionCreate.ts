@@ -18,7 +18,7 @@ export const onMissionCreate = firestore
         .where('status', '==', 'active')
         .get();
 
-      if (activeMissions.size > 3) {
+      if (activeMissions.size > 5) {
         logger.warn(`User ${mission.userId} exceeded max active missions`);
         await snapshot.ref.update({ status: 'paused' });
         return;
