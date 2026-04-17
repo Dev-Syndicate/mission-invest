@@ -561,8 +561,7 @@ class _AiNudgeSection extends ConsumerWidget {
                 }
               });
             },
-            onDismiss: () =>
-                ref.invalidate(missionNudgeProvider(mission)),
+            onDismiss: null,
           ),
         );
       },
