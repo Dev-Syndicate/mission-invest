@@ -80,7 +80,83 @@ class MarketplaceRepository {
       return List<String>.from(snap.data()?['ownedItems'] ?? []);
     });
   }
+
+  /// Seeds the marketplace collection with demo items.
+  /// Skips if items already exist. Returns the number of items created.
+  Future<int> seedDemoItems() async {
+    final existing = await _marketplaceCollection.limit(1).get();
+    if (existing.docs.isNotEmpty) {
+      throw Exception('Marketplace already has items. Clear them first to re-seed.');
+    }
+
+    final batch = _firestore.batch();
+
+    for (final item in _demoMarketplaceItems) {
+      final docRef = _marketplaceCollection.doc();
+      batch.set(docRef, {
+        ...item.toJson(),
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    }
+
+    await batch.commit();
+    return _demoMarketplaceItems.length;
+  }
+
+  /// Deletes all marketplace items.
+  Future<int> clearAllItems() async {
+    final snap = await _marketplaceCollection.get();
+    if (snap.docs.isEmpty) return 0;
+
+    final batch = _firestore.batch();
+    for (final doc in snap.docs) {
+      batch.delete(doc.reference);
+    }
+    await batch.commit();
+    return snap.docs.length;
+  }
 }
+
+// ---------------------------------------------------------------------------
+// Demo Data
+// ---------------------------------------------------------------------------
+
+const _demoMarketplaceItems = [
+  // ── Badges ──
+  MarketplaceItem(id: '', name: 'Early Bird', type: MarketplaceItemType.badge, cost: 50, rarity: ItemRarity.common, description: 'For those who start saving before sunrise. Show off your early commitment!'),
+  MarketplaceItem(id: '', name: 'Streak Master', type: MarketplaceItemType.badge, cost: 150, rarity: ItemRarity.uncommon, description: 'Prove your consistency with this streak-themed badge on your profile.'),
+  MarketplaceItem(id: '', name: 'Diamond Hands', type: MarketplaceItemType.badge, cost: 500, rarity: ItemRarity.epic, description: 'You never gave up on your mission. A badge for the truly committed.'),
+  MarketplaceItem(id: '', name: 'Mission Legend', type: MarketplaceItemType.badge, cost: 1000, rarity: ItemRarity.legendary, description: 'The ultimate badge. Only for those who have conquered multiple missions.'),
+  MarketplaceItem(id: '', name: 'First Steps', type: MarketplaceItemType.badge, cost: 25, rarity: ItemRarity.common, description: 'Everyone starts somewhere. Celebrate your first contribution!'),
+  MarketplaceItem(id: '', name: 'Comeback Kid', type: MarketplaceItemType.badge, cost: 200, rarity: ItemRarity.rare, description: 'Recovered a broken streak and came back stronger than ever.'),
+
+  // ── Themes ──
+  MarketplaceItem(id: '', name: 'Midnight Blue', type: MarketplaceItemType.theme, cost: 300, rarity: ItemRarity.rare, description: 'A sleek dark blue theme that makes your dashboard feel premium.'),
+  MarketplaceItem(id: '', name: 'Sunset Gradient', type: MarketplaceItemType.theme, cost: 200, rarity: ItemRarity.uncommon, description: 'Warm orange-to-pink gradient theme for a vibrant savings experience.'),
+  MarketplaceItem(id: '', name: 'Neon Glow', type: MarketplaceItemType.theme, cost: 750, rarity: ItemRarity.epic, description: 'Electric neon accents on a dark background. Cyberpunk vibes for your finances.'),
+  MarketplaceItem(id: '', name: 'Forest Calm', type: MarketplaceItemType.theme, cost: 150, rarity: ItemRarity.uncommon, description: 'A soothing green palette inspired by nature. Save in peace.'),
+  MarketplaceItem(id: '', name: 'Golden Hour', type: MarketplaceItemType.theme, cost: 1200, rarity: ItemRarity.legendary, description: 'Luxurious gold accents on deep black. The theme of champions.'),
+
+  // ── Certificate Styles ──
+  MarketplaceItem(id: '', name: 'Classic Parchment', type: MarketplaceItemType.certificateStyle, cost: 100, rarity: ItemRarity.common, description: 'A timeless parchment-style certificate for your completed missions.'),
+  MarketplaceItem(id: '', name: 'Modern Minimal', type: MarketplaceItemType.certificateStyle, cost: 175, rarity: ItemRarity.uncommon, description: 'Clean, modern certificate design with bold typography.'),
+  MarketplaceItem(id: '', name: 'Royal Seal', type: MarketplaceItemType.certificateStyle, cost: 400, rarity: ItemRarity.rare, description: 'An ornate certificate with a golden seal and decorative borders.'),
+  MarketplaceItem(id: '', name: 'Holographic', type: MarketplaceItemType.certificateStyle, cost: 800, rarity: ItemRarity.epic, description: 'A futuristic holographic certificate that shimmers with achievement.'),
+
+  // ── Avatar Frames ──
+  MarketplaceItem(id: '', name: 'Bronze Ring', type: MarketplaceItemType.avatarFrame, cost: 75, rarity: ItemRarity.common, description: 'A simple bronze frame to surround your profile picture.'),
+  MarketplaceItem(id: '', name: 'Silver Laurel', type: MarketplaceItemType.avatarFrame, cost: 250, rarity: ItemRarity.uncommon, description: 'A laurel wreath frame in silver. Victory looks good on you.'),
+  MarketplaceItem(id: '', name: 'Gold Crown', type: MarketplaceItemType.avatarFrame, cost: 500, rarity: ItemRarity.rare, description: 'A golden crown frame. Rule your savings kingdom.'),
+  MarketplaceItem(id: '', name: 'Fire Ring', type: MarketplaceItemType.avatarFrame, cost: 700, rarity: ItemRarity.epic, description: 'An animated fire ring frame for the hottest savers.'),
+  MarketplaceItem(id: '', name: 'Cosmic Halo', type: MarketplaceItemType.avatarFrame, cost: 1500, rarity: ItemRarity.legendary, description: 'A swirling galaxy halo around your avatar. Truly out of this world.'),
+
+  // ── Profile Effects ──
+  MarketplaceItem(id: '', name: 'Sparkle Trail', type: MarketplaceItemType.profileEffect, cost: 100, rarity: ItemRarity.common, description: 'Subtle sparkle particles on your profile. A touch of magic.'),
+  MarketplaceItem(id: '', name: 'Confetti Burst', type: MarketplaceItemType.profileEffect, cost: 250, rarity: ItemRarity.uncommon, description: 'Colorful confetti rains down on your profile. Party mode!'),
+  MarketplaceItem(id: '', name: 'Rain of Coins', type: MarketplaceItemType.profileEffect, cost: 400, rarity: ItemRarity.rare, description: 'Golden coins cascade across your profile. Money vibes only.'),
+  MarketplaceItem(id: '', name: 'Aurora Borealis', type: MarketplaceItemType.profileEffect, cost: 900, rarity: ItemRarity.epic, description: 'Mesmerizing northern lights dance across your profile background.'),
+  MarketplaceItem(id: '', name: 'Lightning Storm', type: MarketplaceItemType.profileEffect, cost: 1800, rarity: ItemRarity.legendary, description: 'Electric lightning bolts crackle on your profile. Pure power.'),
+];
 
 // ---------------------------------------------------------------------------
 // Riverpod Providers

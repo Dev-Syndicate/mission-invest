@@ -23,6 +23,7 @@ export { getAdminAnalytics } from './admin/getAnalytics';
 export { manageTemplate } from './admin/manageTemplates';
 export { manageFeatureFlag } from './admin/manageFeatureFlags';
 export { manageChallenge } from './admin/manageChallenges';
+export { seedMarketplace } from './admin/seedMarketplace';
 export { manageSeason } from './seasons/manageSeason';
 export { joinSeason } from './seasons/joinSeason';
 export { manageTeamMission } from './teams/manageTeamMission';

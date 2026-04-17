@@ -3,14 +3,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/marketplace_item.dart';
 import '../../data/models/xp_event.dart';
+import '../../data/demo/demo_marketplace_items.dart';
 import '../../data/repositories/marketplace_repository.dart';
 import '../../data/services/xp_service.dart';
 import '../../../home/presentation/providers/home_provider.dart';
 
-// ── All marketplace items ──
+// ── All marketplace items (static demo data + Firestore items merged) ──
 
 final marketplaceItemsProvider = StreamProvider<List<MarketplaceItem>>((ref) {
-  return ref.watch(marketplaceRepositoryProvider).watchAllItems();
+  return ref.watch(marketplaceRepositoryProvider).watchAllItems().map((firestoreItems) {
+    if (firestoreItems.isNotEmpty) return firestoreItems;
+    return demoMarketplaceItems;
+  });
 });
 
 // ── User's owned item IDs ──

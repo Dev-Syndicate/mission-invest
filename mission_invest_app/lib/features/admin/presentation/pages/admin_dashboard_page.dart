@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/dashboard_card.dart';
+import '../../../rewards/data/repositories/marketplace_repository.dart';
 
 class AdminDashboardPage extends ConsumerWidget {
   const AdminDashboardPage({super.key});
@@ -88,6 +89,19 @@ class AdminDashboardPage extends ConsumerWidget {
                       curve: Curves.easeOutCubic,
                     ),
               )),
+          const SizedBox(height: 20),
+
+          // Marketplace seed section
+          Text(
+            'Data Tools',
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: theme.colorScheme.onSurface.withAlpha(150),
+            ),
+          ),
+          const SizedBox(height: 12),
+          const _SeedMarketplaceTile(),
+
           // Extra space for floating nav
           const SizedBox(height: 80),
         ],
@@ -260,6 +274,128 @@ class _AdminTile extends StatelessWidget {
             Icons.chevron_right_rounded,
             color: theme.colorScheme.onSurface.withAlpha(80),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SeedMarketplaceTile extends ConsumerStatefulWidget {
+  const _SeedMarketplaceTile();
+
+  @override
+  ConsumerState<_SeedMarketplaceTile> createState() => _SeedMarketplaceTileState();
+}
+
+class _SeedMarketplaceTileState extends ConsumerState<_SeedMarketplaceTile> {
+  bool _loading = false;
+
+  Future<void> _seed() async {
+    setState(() => _loading = true);
+    try {
+      final repo = ref.read(marketplaceRepositoryProvider);
+      final count = await repo.seedDemoItems();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Seeded $count marketplace items!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _clear() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Clear Marketplace'),
+        content: const Text('Delete all marketplace items? This cannot be undone.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete All')),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+
+    setState(() => _loading = true);
+    try {
+      final repo = ref.read(marketplaceRepositoryProvider);
+      final count = await repo.clearAllItems();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Deleted $count marketplace items.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return DashboardCard(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.badgeGold.withAlpha(20),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Icon(Icons.storefront_rounded, color: AppColors.badgeGold, size: 22),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Marketplace',
+                  style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Seed or clear demo items',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withAlpha(120),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (_loading)
+            const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
+          else ...[
+            IconButton(
+              icon: const Icon(Icons.add_circle_outline_rounded, size: 22),
+              tooltip: 'Seed demo items',
+              onPressed: _seed,
+              color: AppColors.success,
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete_outline_rounded, size: 22),
+              tooltip: 'Clear all items',
+              onPressed: _clear,
+              color: AppColors.progressRed,
+            ),
+          ],
         ],
       ),
     );
